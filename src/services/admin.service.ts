@@ -6,6 +6,7 @@ import AppDataSource from "../data-source";
 import { User } from "../entities/User";
 import { Team } from "../entities/Team";
 import { Role } from "../entities/Role";
+import { Brand } from "../entities/Brand";
 
 class AdminService {
     // Create a new user
@@ -48,7 +49,60 @@ class AdminService {
 
         await userRepo.save(user);
 
+        if (hasTO) {
+            // Check for cyclic hierarchy
+            const hasCycle = await this.checkForCyclicHierarchy(
+                user,
+                userData.managerId
+            );
+            if (hasCycle) {
+                throw new ApiError(
+                    httpStatus.BAD_REQUEST,
+                    "Cyclic hierarchy detected. Cannot assign this user as team owner."
+                );
+            }
+
+            // Automatically create a team if user has the "TO" role
+            const team = teamRepo.create({
+                teamOwner: user,
+            });
+            await teamRepo.save(team);
+
+            // Assign the team to the user
+            user.team = team;
+            await userRepo.save(user);
+        }
+
         return user;
+    }
+
+    // Check for cyclic hierarchy
+    async checkForCyclicHierarchy(
+        user: User,
+        managerId: number | null
+    ): Promise<boolean> {
+        if (!managerId) return false;
+
+        let currentUser = await AppDataSource.getRepository(User).findOne({
+            where: { id: managerId },
+            relations: ["team.teamOwner"],
+        });
+
+        while (currentUser) {
+            if (currentUser.id === user.id) {
+                return true; // Cycle detected
+            }
+            if (currentUser.team?.teamOwner) {
+                currentUser = await AppDataSource.getRepository(User).findOne({
+                    where: { id: currentUser.team.teamOwner.id },
+                    relations: ["team.teamOwner"],
+                });
+            } else {
+                break;
+            }
+        }
+
+        return false;
     }
 }
 

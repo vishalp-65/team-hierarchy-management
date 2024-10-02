@@ -11,3 +11,11 @@ export const createUser = catchAsync(async (req: Request, res: Response) => {
     const user = await adminService.createUser(validatedData);
     res.status(httpStatus.CREATED).json({ user });
 });
+
+// Update an existing user
+export const updateUser = catchAsync(async (req: Request, res: Response) => {
+    const userId = Number(req.params.id);
+    const validatedData = userSchema.partial().parse(req.body);
+    const user = await adminService.updateUser(userId, validatedData);
+    res.status(httpStatus.OK).json({ user });
+});

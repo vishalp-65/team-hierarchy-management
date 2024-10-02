@@ -11,3 +11,15 @@ export const userSchema = z.object({
         .min(1, "At least one role is required"),
     managerId: z.number().positive().optional(), // Optional field for hierarchy
 });
+
+export const brandSchema = z.object({
+    brand_name: z.string().min(1, "Brand name is required"),
+    revenue: z.number().positive("Revenue should be a positive number"),
+    deal_closed_value: z
+        .number()
+        .positive("Deal value should be a positive number"),
+    contact_person_name: z.string().min(1, "Person name is required"),
+    contact_person_phone: z.string().min(10, "Contact number is required"),
+    contact_person_email: z.string().email("Person email is required"),
+    ownerIds: z.array(z.number().positive()).min(1), // IDs of BOs
+});

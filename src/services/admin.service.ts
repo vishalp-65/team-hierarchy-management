@@ -147,6 +147,32 @@ class AdminService {
         return user;
     }
 
+    // Create a new brand
+    async createBrand(brandData: any) {
+        const brandRepo = AppDataSource.getRepository(Brand);
+        const userRepo = AppDataSource.getRepository(User);
+
+        // Fetch Brand Owners using findBy (In for multiple ids)
+        const owners = await userRepo.find({
+            where: {
+                id: In(brandData.ownerIds),
+            },
+        });
+
+        const brand = brandRepo.create({
+            brand_name: brandData.brand_name,
+            revenue: brandData.revenue,
+            deal_closed_value: brandData.deal_closed_value,
+            contact_person_name: brandData.contact_person_name,
+            contact_person_phone: brandData.contact_person_phone,
+            contact_person_email: brandData.contact_person_email,
+            owners: owners,
+        });
+
+        await brandRepo.save(brand);
+        return brand;
+    }
+
     // Check for cyclic hierarchy
     async checkForCyclicHierarchy(
         user: User,

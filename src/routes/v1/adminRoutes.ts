@@ -6,7 +6,7 @@ import {
     listUsersWithTOHierarchy,
     updateBrand,
     updateUser,
-} from "../../controllers/user.controller";
+} from "../../controllers/admin.controller";
 
 const router = Router();
 

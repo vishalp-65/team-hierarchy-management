@@ -29,27 +29,19 @@ export const checkAdmin = catchAsync(
     }
 );
 
-// Middleware for role-based authorization
-export const checkRole = (roles: string[]) => {
-    return async (req: Request, res: Response, next: NextFunction) => {
-        const userId = req.user?.id; // Assuming userId is set by authentication middleware
-        const userRepo = AppDataSource.getRepository(User);
+export const authorizeRoles = (roles: string[]) => {
+    return (req: Request, res: Response, next: NextFunction) => {
+        const userRoles = req.user.roles.map((role: any) => role.role_name);
+        const hasRole = roles.some((role) => userRoles.includes(role));
 
-        const user = await userRepo.findOne({
-            where: { id: userId },
-            relations: ["roles"],
-        });
-
-        if (
-            !user ||
-            !user.roles.some((role) => roles.includes(role.role_name))
-        ) {
-            throw new ApiError(
-                httpStatus.FORBIDDEN,
-                "Access denied, insufficient permissions"
+        if (!hasRole) {
+            return next(
+                new ApiError(
+                    httpStatus.FORBIDDEN,
+                    "You are not authorized to access this resource"
+                )
             );
         }
-
         next();
     };
 };
@@ -64,8 +56,7 @@ export const authentication = catchAsync(
                 .json({ error: "Authorization header missing" });
         }
 
-        const token = header.split(" ")[1];
-        console.log("token", token);
+        const token = header.split(" ")[1]; // Assuming the format "Bearer <token>"
 
         if (!token) {
             return res
@@ -73,11 +64,32 @@ export const authentication = catchAsync(
                 .json({ message: "Invalid Token" });
         }
 
-        req.user = req.user || {}; // This should now work
-        req.user.id = token;
+        try {
+            // Assuming the token is user_id itself, no decoding is necessary
+            const userId = parseInt(token); // In a real-world scenario, we'll verify the token (JWT, etc.)
 
-        console.log(req.user); // Verify that `req.user` exists at runtime
+            // Fetch the full user from the database
+            const userRepo = AppDataSource.getRepository(User);
+            const user = await userRepo.findOne({
+                where: { id: userId },
+                relations: ["roles"], // Include related roles or any other relations you need
+            });
 
-        next();
+            if (!user) {
+                return res
+                    .status(httpStatus.UNAUTHORIZED)
+                    .json({ error: "User not found" });
+            }
+
+            // Attach the full user object to the request
+            req.user = user;
+
+            console.log(req.user); // Verify that `req.user` contains the full user object
+
+            next();
+        } catch (error) {
+            console.error(error);
+            return next(new ApiError(httpStatus.UNAUTHORIZED, "Unauthorized"));
+        }
     }
 );

@@ -21,7 +21,7 @@ export const brandSchema = z.object({
     contact_person_name: z.string().min(1, "Person name is required"),
     contact_person_phone: z.string().min(10, "Contact number is required"),
     contact_person_email: z.string().email("Person email is required"),
-    ownerIds: z.array(z.number().positive()).min(1), // IDs of BOs
+    ownerIds: z.array(z.number().positive()).min(1).optional(), // IDs of BOs
 });
 
 export const assignRoleSchema = z.object({

@@ -7,7 +7,7 @@ import {
     assignRoleSchema,
     brandSchema,
     userSchema,
-} from "../validations/user.validations";
+} from "../validations/reqValidations";
 
 // Create a new user
 export const createUser = catchAsync(async (req: Request, res: Response) => {

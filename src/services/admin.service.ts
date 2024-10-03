@@ -206,6 +206,27 @@ class AdminService {
         return user;
     }
 
+    // List all TOs above a user in the hierarchy
+    async listUsersWithTOHierarchy(userId: number) {
+        const userRepo = AppDataSource.getRepository(User);
+        const user = await userRepo.findOne({
+            where: { id: userId },
+            relations: ["team.teamOwner"],
+        });
+
+        if (!user) {
+            throw new ApiError(httpStatus.NOT_FOUND, "User not found");
+        }
+
+        const hierarchy = [];
+        let currentUser = user;
+        while (currentUser.team?.teamOwner) {
+            hierarchy.push(currentUser.team.teamOwner);
+            currentUser = currentUser.team.teamOwner;
+        }
+        return hierarchy;
+    }
+
     // Check for cyclic hierarchy
     async checkForCyclicHierarchy(
         user: User,

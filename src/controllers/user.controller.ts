@@ -50,3 +50,12 @@ export const assignRoleToUser = catchAsync(
         res.status(httpStatus.OK).json({ user });
     }
 );
+
+// List TOs above a user in the hierarchy
+export const listUsersWithTOHierarchy = catchAsync(
+    async (req: Request, res: Response) => {
+        const userId = Number(req.params.userId);
+        const hierarchy = await adminService.listUsersWithTOHierarchy(userId);
+        res.status(httpStatus.OK).json({ hierarchy });
+    }
+);

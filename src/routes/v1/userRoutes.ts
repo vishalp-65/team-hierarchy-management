@@ -3,6 +3,7 @@ import {
     assignRoleToUser,
     createBrand,
     createUser,
+    listUsersWithTOHierarchy,
     updateBrand,
     updateUser,
 } from "../../controllers/user.controller";
@@ -14,5 +15,6 @@ router.put("/user/:id", updateUser);
 router.post("/brand", createBrand);
 router.put("/brand/:id", updateBrand);
 router.post("/assign-role", assignRoleToUser);
+router.get("/users/hierarchy/:userId", listUsersWithTOHierarchy);
 
 export default router;

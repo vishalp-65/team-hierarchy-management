@@ -3,7 +3,11 @@ import { Request, Response } from "express";
 import { adminService } from "../services/admin.service";
 import catchAsync from "../utils/catchAsync";
 import httpStatus from "http-status";
-import { brandSchema, userSchema } from "../validations/user.validations";
+import {
+    assignRoleSchema,
+    brandSchema,
+    userSchema,
+} from "../validations/user.validations";
 
 // Create a new user
 export const createUser = catchAsync(async (req: Request, res: Response) => {
@@ -34,3 +38,15 @@ export const updateBrand = catchAsync(async (req: Request, res: Response) => {
     const brand = await adminService.updateBrand(brandId, validatedData);
     res.status(httpStatus.OK).json({ brand });
 });
+
+// Assign roles to a user
+export const assignRoleToUser = catchAsync(
+    async (req: Request, res: Response) => {
+        const validatedData = assignRoleSchema.parse(req.body);
+        const user = await adminService.assignRoleToUser(
+            validatedData.userId,
+            validatedData.roleIds
+        );
+        res.status(httpStatus.OK).json({ user });
+    }
+);

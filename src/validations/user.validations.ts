@@ -23,3 +23,10 @@ export const brandSchema = z.object({
     contact_person_email: z.string().email("Person email is required"),
     ownerIds: z.array(z.number().positive()).min(1), // IDs of BOs
 });
+
+export const assignRoleSchema = z.object({
+    userId: z.number().positive("User Id is required"),
+    roleIds: z
+        .array(z.number().positive())
+        .min(1, "At least one role is required"),
+});

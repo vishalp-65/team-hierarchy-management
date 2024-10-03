@@ -187,6 +187,25 @@ class AdminService {
         return brand;
     }
 
+    // Assign roles to a user
+    async assignRoleToUser(userId: number, roleIds: number[]) {
+        const userRepo = AppDataSource.getRepository(User);
+        const roleRepo = AppDataSource.getRepository(Role);
+
+        const user = await userRepo.findOne({
+            where: { id: userId },
+            relations: ["roles"],
+        });
+        if (!user) throw new ApiError(httpStatus.NOT_FOUND, "User not found");
+
+        const roles = await roleRepo.find({
+            where: { id: In(roleIds) },
+        });
+        user.roles = roles;
+        await userRepo.save(user);
+        return user;
+    }
+
     // Check for cyclic hierarchy
     async checkForCyclicHierarchy(
         user: User,

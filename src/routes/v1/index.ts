@@ -1,12 +1,13 @@
 import { Router } from "express";
 import httpStatus from "http-status";
-import userRoutes from "./userRoutes";
+import adminRoutes from "./adminRoutes";
+import { authentication, checkAdmin } from "../../middlewares/auth.middleware";
 // import brandRoutes from "./brandRoutes";
 
 const router = Router();
 
 // Node routes
-router.use("/admin", userRoutes);
+router.use("/admin", authentication, checkAdmin, adminRoutes);
 // router.use("/brand", brandRoutes);
 
 // Checking api is live

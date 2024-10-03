@@ -26,3 +26,11 @@ export const createBrand = catchAsync(async (req: Request, res: Response) => {
     const brand = await adminService.createBrand(validatedData);
     res.status(httpStatus.CREATED).json({ brand });
 });
+
+// Update an existing brand
+export const updateBrand = catchAsync(async (req: Request, res: Response) => {
+    const brandId = Number(req.params.id);
+    const validatedData = brandSchema.partial().parse(req.body);
+    const brand = await adminService.updateBrand(brandId, validatedData);
+    res.status(httpStatus.OK).json({ brand });
+});

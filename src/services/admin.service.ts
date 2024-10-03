@@ -173,6 +173,20 @@ class AdminService {
         return brand;
     }
 
+    // Update an existing brand
+    async updateBrand(brandId: number, brandData: any) {
+        const brandRepo = AppDataSource.getRepository(Brand);
+        const brand = await brandRepo.findOneBy({ id: brandId });
+
+        if (!brand) {
+            throw new ApiError(httpStatus.NOT_FOUND, "Brand not found");
+        }
+
+        Object.assign(brand, brandData);
+        await brandRepo.save(brand);
+        return brand;
+    }
+
     // Check for cyclic hierarchy
     async checkForCyclicHierarchy(
         user: User,

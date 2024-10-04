@@ -1,9 +1,6 @@
-// src/services/brandService.ts
 import AppDataSource from "../data-source";
 import { Brand } from "../entities/Brand";
 import { User } from "../entities/User";
-import { ApiError } from "../utils/ApiError";
-import httpStatus from "http-status";
 
 class BrandService {
     async createOrUpdateBrand(user: any, brandData: any) {

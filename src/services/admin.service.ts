@@ -1,4 +1,3 @@
-// src/services/admin.service.ts
 import { ApiError } from "../utils/ApiError";
 import httpStatus from "http-status";
 import { In } from "typeorm";

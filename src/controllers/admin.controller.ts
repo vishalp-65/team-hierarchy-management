@@ -1,4 +1,3 @@
-// src/controllers/admin.controller.ts
 import { Request, Response } from "express";
 import { adminService } from "../services/admin.service";
 import catchAsync from "../utils/catchAsync";
@@ -47,7 +46,7 @@ export const assignRoleToUser = catchAsync(
             validatedData.userId,
             validatedData.roleIds
         );
-        res.status(httpStatus.OK).json({ user });
+        res.status(httpStatus.OK).json({ sucess: true, user });
     }
 );
 
@@ -56,6 +55,6 @@ export const listUsersWithTOHierarchy = catchAsync(
     async (req: Request, res: Response) => {
         const userId = Number(req.params.userId);
         const hierarchy = await adminService.listUsersWithTOHierarchy(userId);
-        res.status(httpStatus.OK).json({ hierarchy });
+        res.status(httpStatus.OK).json({ sucess: true, hierarchy });
     }
 );

@@ -1,4 +1,3 @@
-// src/middleware/authMiddleware.ts
 import { Request, Response, NextFunction } from "express";
 import { ApiError } from "../utils/ApiError";
 import AppDataSource from "../data-source";

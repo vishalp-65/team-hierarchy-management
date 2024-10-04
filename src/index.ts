@@ -8,32 +8,11 @@ import httpStatus from "http-status";
 import errorHandler from "./middlewares/errorHandler";
 import apiRoutes from "./routes/index";
 import AppDataSource from "./data-source";
-import { Role } from "./entities/Role";
+import { seedRoles } from "./seeds/roles.seed";
 
 dotenv.config(); // Load environment variables
 
 const app = express();
-
-// Seed file for role initilization
-const seedRoles = async () => {
-    const roleRepo = AppDataSource.getRepository(Role);
-
-    const defaultRoles = ["ADMIN", "PO", "BO", "TO"];
-
-    // Check if roles already exist
-    const existingRoles = await roleRepo.find();
-    if (existingRoles.length === 0) {
-        // Insert default roles into the database
-        const rolesToInsert = defaultRoles.map((roleName) => {
-            return roleRepo.create({ role_name: roleName });
-        });
-
-        await roleRepo.save(rolesToInsert);
-        console.log("Default roles seeded successfully");
-    } else {
-        console.log("Roles already exist in the database");
-    }
-};
 
 // Handle CORS issue
 app.use(cors({ origin: "*" }));

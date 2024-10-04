@@ -1,4 +1,3 @@
-// src/entities/team.entity.ts
 import { Entity, PrimaryGeneratedColumn, ManyToOne, OneToMany } from "typeorm";
 import { User } from "./User";
 

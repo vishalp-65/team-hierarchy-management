@@ -1,4 +1,3 @@
-// src/services/teamService.ts
 import AppDataSource from "../data-source";
 import { Team } from "../entities/Team";
 import { User } from "../entities/User";

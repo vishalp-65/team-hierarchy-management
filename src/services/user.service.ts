@@ -28,6 +28,7 @@ class UserService {
     async searchUser(searchTerm: string) {
         const userRepo = AppDataSource.getRepository(User);
 
+        // Search by name, email and phone_number
         const users = await userRepo
             .createQueryBuilder("user")
             .where("user.user_name LIKE :searchTerm", {

@@ -16,7 +16,7 @@ const router = Router();
 router.use("/admin", checkAdmin, adminRoutes);
 
 // Brand routes
-router.use("/brand", authorizeRoles(["BO"]), brandRoutes);
+router.use("/brand", brandRoutes);
 
 // Team routes
 router.use("/team", authorizeRoles(["TO"]), teamRoutes);

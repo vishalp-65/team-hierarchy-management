@@ -22,3 +22,12 @@ export const getBrands = catchAsync(async (req: Request, res: Response) => {
     const brands = await brandService.getBrandsOwnedByUser(req.user.id);
     return res.status(httpStatus.OK).json({ success: true, brands });
 });
+
+export const getBrandDetails = catchAsync(
+    async (req: Request, res: Response) => {
+        const brandId = parseInt(req.params.brandId, 10);
+        const userId = req.user.id;
+        const result = await brandService.getBrandDetails(userId, brandId);
+        res.status(httpStatus.OK).json({ sucess: true, result });
+    }
+);

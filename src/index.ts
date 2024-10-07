@@ -9,6 +9,7 @@ import errorHandler from "./middlewares/errorHandler";
 import apiRoutes from "./routes/index";
 import AppDataSource from "./data-source";
 import { seedRoles } from "./seeds/roles.seed";
+import swaggerRoutes from "./config/swagger";
 
 dotenv.config(); // Load environment variables
 
@@ -22,6 +23,9 @@ app.use(express.urlencoded({ extended: true }));
 
 // API routes
 app.use("/api", apiRoutes);
+
+// Swagger routes
+app.use(swaggerRoutes);
 
 // 404 handler for unknown API requests
 app.use((req, res, next) => {

@@ -22,7 +22,7 @@ router.use("/brand", brandRoutes);
 router.use("/team", authorizeRoles(["TO"]), teamRoutes);
 
 // User routes
-router.use("/user", authentication, userRoutes);
+router.use("/user", userRoutes);
 
 // Checking api is live
 router.get("/info", (req, res) => {

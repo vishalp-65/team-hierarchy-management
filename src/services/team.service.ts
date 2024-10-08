@@ -1,5 +1,4 @@
 import AppDataSource from "../data-source";
-import { Team } from "../entities/Team";
 import { User } from "../entities/User";
 import { ApiError } from "../utils/ApiError";
 import httpStatus from "http-status";
@@ -7,16 +6,20 @@ import httpStatus from "http-status";
 class TeamService {
     async getTeamHierarchy(userId: number) {
         const userRepo = AppDataSource.getRepository(User);
-        const user = await userRepo.findOne({
-            where: { id: userId },
-            relations: ["team", "roles"],
+
+        // Fetch all users and their managers in a single query
+        const allUsers = await userRepo.find({
+            relations: ["team", "roles", "manager"], // Assuming "manager" is a relation that points to the user's manager
         });
 
-        // Check if the user exists and has roles
+        // Find the root user (team owner)
+        const user = allUsers.find((user) => user.id === userId);
+
         if (!user) {
-            throw new ApiError(httpStatus.NOT_FOUND, "User not found");
+            throw new ApiError(httpStatus.NOT_FOUND, "Team owner not found");
         }
 
+        // Ensure the user has the "TO" role
         if (
             !user.roles ||
             !user.roles.some((role) => role.role_name === "TO")
@@ -27,39 +30,53 @@ class TeamService {
             );
         }
 
-        // Fetch the team for the user
-        const teamRepo = AppDataSource.getRepository(Team);
-        const team = await teamRepo.findOne({
-            where: { teamOwner: user },
-            relations: ["teamOwner", "members"], // Assuming 'members' is the relation for users in the team
+        // Build a map of users grouped by their managerId
+        const managerMap = new Map<number, User[]>();
+        allUsers.forEach((user) => {
+            if (user.manager && user.manager.id) {
+                if (!managerMap.has(user.manager.id)) {
+                    managerMap.set(user.manager.id, []);
+                }
+                managerMap.get(user.manager.id)?.push(user);
+            }
         });
 
-        if (!team) {
-            throw new ApiError(
-                httpStatus.NOT_FOUND,
-                "Team not found for this user"
-            );
-        }
-        return team;
-    }
+        // BFS approach using a queue to build the hierarchy
+        const buildHierarchy = (rootUser: User) => {
+            const queue = [rootUser];
+            const hierarchy = { ...rootUser, hierarchy: [] };
+            const userHierarchyMap = new Map<number, any>();
+            userHierarchyMap.set(rootUser.id, hierarchy);
 
-    // Helper function to recursively get team hierarchy
-    async getUserHierarchy(user: User) {
-        const hierarchy: any[] = [];
-        const currentTeam = await AppDataSource.getRepository(User).find({
-            where: { team: { teamOwner: user } },
-            relations: ["team", "roles"],
-        });
+            while (queue.length > 0) {
+                const currentUser = queue.shift();
+                const currentHierarchy = userHierarchyMap.get(currentUser.id);
 
-        for (const member of currentTeam) {
-            const memberHierarchy = await this.getUserHierarchy(member);
-            hierarchy.push({
-                user: member,
-                subordinates: memberHierarchy,
-            });
-        }
+                // Get subordinates from the managerMap
+                const subordinates = managerMap.get(currentUser.id) || [];
 
-        return hierarchy;
+                // For each subordinate, add them to the hierarchy and queue
+                subordinates.forEach((subordinate) => {
+                    const subordinateHierarchy = {
+                        ...subordinate,
+                        hierarchy: [],
+                    };
+                    currentHierarchy.hierarchy.push(subordinateHierarchy);
+                    queue.push(subordinate);
+                    userHierarchyMap.set(subordinate.id, subordinateHierarchy);
+                });
+            }
+
+            return hierarchy;
+        };
+
+        // Build the hierarchy tree starting from the root user
+        const hierarchy = buildHierarchy(user);
+
+        return {
+            success: true,
+            hierarchy,
+        };
     }
 }
 

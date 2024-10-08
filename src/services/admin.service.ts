@@ -25,9 +25,7 @@ class AdminService {
 
         // Fetch Role entities based on role names
         const roles = await roleRepo.find({
-            where: {
-                role_name: In(userData.roles),
-            },
+            where: { role_name: In(userData.roles) },
         });
 
         // Validate roles
@@ -40,6 +38,15 @@ class AdminService {
             );
         }
 
+        // Fetch manager if provided
+        let manager = null;
+        if (userData.managerId) {
+            manager = await userRepo.findOneBy({ id: userData.managerId });
+            if (!manager) {
+                throw new ApiError(httpStatus.BAD_REQUEST, "Manager not found");
+            }
+        }
+
         // Create the user
         const user = userRepo.create({
             user_name: userData.user_name,
@@ -47,12 +54,13 @@ class AdminService {
             phone_number: userData.phone_number,
             email: userData.email,
             roles: roles,
+            manager: manager, // Assign manager here
         });
 
         await userRepo.save(user);
 
+        // Create a team if user is a Team Owner (TO)
         if (hasTO) {
-            // Check for cyclic hierarchy
             const hasCycle = await this.checkForCyclicHierarchy(
                 user,
                 userData.managerId
@@ -60,10 +68,9 @@ class AdminService {
             if (hasCycle) {
                 throw new ApiError(
                     httpStatus.BAD_REQUEST,
-                    "Cyclic hierarchy detected. Cannot assign this user as team owner."
+                    "Cyclic hierarchy detected. Cannot assign this manager."
                 );
             }
-
             // Automatically create a team if user has the "TO" role
             const team = teamRepo.create({
                 teamOwner: user,
@@ -86,7 +93,7 @@ class AdminService {
 
         const user = await userRepo.findOne({
             where: { id: userId },
-            relations: ["roles", "team"],
+            relations: ["roles", "team", "manager"],
         });
 
         if (!user) {
@@ -112,6 +119,30 @@ class AdminService {
             user.roles = roles;
         }
 
+        // Check if user manager is being updated
+        if (userData.managerId && user.manager?.id !== userData.managerId) {
+            const manager = await userRepo.findOneBy({
+                id: userData.managerId,
+            });
+            if (!manager) {
+                throw new ApiError(httpStatus.BAD_REQUEST, "Manager not found");
+            }
+
+            // Check for cyclic hierarchy if updating the manager
+            const hasCycle = await this.checkForCyclicHierarchy(
+                user,
+                userData.managerId
+            );
+            if (hasCycle) {
+                throw new ApiError(
+                    httpStatus.BAD_REQUEST,
+                    "Cyclic hierarchy detected. Cannot assign this manager."
+                );
+            }
+
+            user.manager = manager;
+        }
+
         // Update user details
         Object.assign(user, {
             user_name: userData.user_name || user.user_name,
@@ -123,18 +154,6 @@ class AdminService {
         await userRepo.save(user);
 
         if (userData.roles && userData.roles.includes("TO")) {
-            // Check for cyclic hierarchy if updating roles to TO
-            const hasCycle = await this.checkForCyclicHierarchy(
-                user,
-                userData.managerId
-            );
-            if (hasCycle) {
-                throw new ApiError(
-                    httpStatus.BAD_REQUEST,
-                    "Cyclic hierarchy detected. Cannot assign this user as team owner."
-                );
-            }
-
             // If the user doesn't have a team, create one
             if (!user.team) {
                 const team = teamRepo.create({
@@ -206,13 +225,32 @@ class AdminService {
     // Update an existing brand
     async updateBrand(brandId: number, brandData: brandTypes) {
         const brandRepo = AppDataSource.getRepository(Brand);
-        const brand = await brandRepo.findOneBy({ id: brandId });
+        const userRepo = AppDataSource.getRepository(User);
+
+        const brand = await brandRepo.findOne({
+            where: { id: brandId },
+        });
 
         if (!brand) {
             throw new ApiError(httpStatus.NOT_FOUND, "Brand not found");
         }
 
-        Object.assign(brand, brandData);
+        // Update brand fields
+        Object.assign(brand, {
+            brand_name: brandData.brand_name || brand.brand_name,
+            revenue: brandData.revenue || brand.revenue,
+            deal_closed_value:
+                brandData.deal_closed_value || brand.deal_closed_value,
+        });
+
+        // Update owners
+        if (brandData.ownerIds) {
+            const owners = await userRepo.find({
+                where: { id: In(brandData.ownerIds) },
+            });
+            brand.owners = owners;
+        }
+
         await brandRepo.save(brand);
         return brand;
     }
@@ -238,10 +276,10 @@ class AdminService {
 
     // List all TOs above a user in the hierarchy
     async listUsersWithTOHierarchy(userId: number) {
-        const userRepo = AppDataSource.getTreeRepository(User);
+        const userRepo = AppDataSource.getRepository(User);
         const user = await userRepo.findOne({
             where: { id: userId },
-            relations: ["team.teamOwner"],
+            relations: ["manager", "team.teamOwner"],
         });
 
         if (!user) {
@@ -250,40 +288,43 @@ class AdminService {
 
         const hierarchy = [];
         let currentUser = user;
-        while (currentUser.team?.teamOwner) {
-            hierarchy.push(currentUser.team.teamOwner);
-            currentUser = currentUser.team.teamOwner;
+
+        // Traverse up the hierarchy
+        while (currentUser?.manager) {
+            hierarchy.push(currentUser.manager);
+            currentUser = await userRepo.findOne({
+                where: { id: currentUser.manager.id },
+                relations: ["manager"],
+            });
         }
+
         return hierarchy;
     }
 
     // Check for cyclic hierarchy
     async checkForCyclicHierarchy(
         user: User,
-        managerId: number | null
+        managerId: number
     ): Promise<boolean> {
-        if (!managerId) return false;
+        if (!managerId) return false; // If no managerId provided, no cycle is possible
 
-        let currentUser = await AppDataSource.getRepository(User).findOne({
+        const userRepo = AppDataSource.getRepository(User);
+
+        // Start with the current manager
+        let currentManager = await userRepo.findOne({
             where: { id: managerId },
-            relations: ["team.teamOwner"],
+            relations: ["manager"], // Load the user's manager
         });
 
-        while (currentUser) {
-            if (currentUser.id === user.id) {
-                return true; // Cycle detected
+        // Traverse up the hierarchy to check for cycles
+        while (currentManager) {
+            if (currentManager.id === user.id) {
+                return true; // Cycle detected if the user is their own manager
             }
-            if (currentUser.team?.teamOwner) {
-                currentUser = await AppDataSource.getRepository(User).findOne({
-                    where: { id: currentUser.team.teamOwner.id },
-                    relations: ["team.teamOwner"],
-                });
-            } else {
-                break;
-            }
+            currentManager = currentManager.manager; // Move up the chain to check the next manager
         }
 
-        return false;
+        return false; // No cycle found
     }
 
     // Check if a user can access another user's data

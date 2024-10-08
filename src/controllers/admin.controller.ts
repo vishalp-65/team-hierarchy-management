@@ -54,6 +54,12 @@ export const assignRoleToUser = catchAsync(
 export const listUsersWithTOHierarchy = catchAsync(
     async (req: Request, res: Response) => {
         const userId = Number(req.params.userId);
+        if (!userId) {
+            res.status(httpStatus.BAD_REQUEST).json({
+                success: false,
+                message: "UserId required",
+            });
+        }
         const hierarchy = await adminService.listUsersWithTOHierarchy(userId);
         res.status(httpStatus.OK).json({ success: true, hierarchy });
     }

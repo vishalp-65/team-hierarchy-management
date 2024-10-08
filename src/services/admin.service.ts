@@ -274,12 +274,14 @@ class AdminService {
         return user;
     }
 
-    // List all TOs above a user in the hierarchy
-    async listUsersWithTOHierarchy(userId: number) {
+    // List all TOs (Team Owners) above a user in the hierarchy
+    async listUsersWithTOHierarchy(userId?: number) {
         const userRepo = AppDataSource.getRepository(User);
+
+        // Fetch the user along with their manager and roles
         const user = await userRepo.findOne({
             where: { id: userId },
-            relations: ["manager", "team.teamOwner"],
+            relations: ["manager", "roles"],
         });
 
         if (!user) {
@@ -289,16 +291,30 @@ class AdminService {
         const hierarchy = [];
         let currentUser = user;
 
-        // Traverse up the hierarchy
+        // Traverse upwards in the hierarchy iteratively
         while (currentUser?.manager) {
-            hierarchy.push(currentUser.manager);
-            currentUser = await userRepo.findOne({
+            const manager = await userRepo.findOne({
                 where: { id: currentUser.manager.id },
-                relations: ["manager"],
+                relations: ["manager", "roles"],
             });
+
+            if (!manager) {
+                break; // If no manager is found, stop the iteration
+            }
+
+            // Check if the manager has the "TO" role
+            if (manager.roles?.some((role) => role.role_name === "TO")) {
+                hierarchy.push(manager);
+            }
+
+            // Move to the next manager (i.e., move up the hierarchy)
+            currentUser = manager;
         }
 
-        return hierarchy;
+        return {
+            success: true,
+            hierarchy,
+        };
     }
 
     // Check for cyclic hierarchy
@@ -325,28 +341,6 @@ class AdminService {
         }
 
         return false; // No cycle found
-    }
-
-    // Check if a user can access another user's data
-    async canAccess(requester: User, targetUser: User): Promise<boolean> {
-        const hierarchy = await teamService.getTeamHierarchy(requester.id);
-
-        return this.isDescendant(hierarchy, targetUser.id);
-    }
-
-    // Recursively check if a user is a descendant in the hierarchy
-    isDescendant(hierarchy: any, targetUserId: number): boolean {
-        if (hierarchy.user.id === targetUserId) {
-            return true;
-        }
-
-        for (const child of hierarchy.children) {
-            if (this.isDescendant(child, targetUserId)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 }
 

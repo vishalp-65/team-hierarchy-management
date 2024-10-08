@@ -29,3 +29,9 @@ export const assignRoleSchema = z.object({
         .array(z.number().positive())
         .min(1, "At least one role is required"),
 });
+
+export const contactSchema = z.object({
+    contact_person_name: z.string().min(1, "Person name is required"),
+    contact_person_phone: z.string().min(10, "Contact number is required"),
+    contact_person_email: z.string().email("Valid email is required"),
+});

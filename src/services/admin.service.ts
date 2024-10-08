@@ -6,10 +6,13 @@ import { User } from "../entities/User";
 import { Team } from "../entities/Team";
 import { Role } from "../entities/Role";
 import { Brand } from "../entities/Brand";
+import { teamService } from "./team.service";
+import { ContactPerson } from "../entities/ContactPerson";
+import { brandTypes, usersTypes } from "../types/types";
 
 class AdminService {
     // Create a new user
-    async createUser(userData: any) {
+    async createUser(userData: usersTypes) {
         const userRepo = AppDataSource.getRepository(User);
         const teamRepo = AppDataSource.getRepository(Team);
         const roleRepo = AppDataSource.getRepository(Role);
@@ -76,7 +79,7 @@ class AdminService {
     }
 
     // Update an existing user
-    async updateUser(userId: number, userData: any) {
+    async updateUser(userId: number, userData: usersTypes) {
         const userRepo = AppDataSource.getRepository(User);
         const roleRepo = AppDataSource.getRepository(Role);
         const teamRepo = AppDataSource.getRepository(Team);
@@ -147,9 +150,17 @@ class AdminService {
     }
 
     // Create a new brand
-    async createBrand(brandData: any) {
+    async createBrand(brandData: brandTypes) {
         const brandRepo = AppDataSource.getRepository(Brand);
         const userRepo = AppDataSource.getRepository(User);
+        const contactPersonRepo = AppDataSource.getRepository(ContactPerson);
+
+        if (!brandData.ownerIds) {
+            throw new ApiError(
+                httpStatus.BAD_REQUEST,
+                "Brand owner id not found"
+            );
+        }
 
         // Fetch Brand Owners using findBy (In for multiple ids)
         const owners = await userRepo.find({
@@ -162,18 +173,38 @@ class AdminService {
             brand_name: brandData.brand_name,
             revenue: brandData.revenue,
             deal_closed_value: brandData.deal_closed_value,
-            contact_person_name: brandData.contact_person_name,
-            contact_person_phone: brandData.contact_person_phone,
-            contact_person_email: brandData.contact_person_email,
             owners: owners,
         });
 
         await brandRepo.save(brand);
-        return brand;
+        // Add new contact persons
+        if (
+            brandData.contact_person_name &&
+            brandData.contact_person_phone &&
+            brandData.contact_person_email
+        ) {
+            const contactPersonEntities = contactPersonRepo.create({
+                contact_person_name: brandData.contact_person_name,
+                contact_person_phone: brandData.contact_person_phone,
+                contact_person_email: brandData.contact_person_email,
+                brand: brand,
+            });
+
+            // Save all contact persons
+            await contactPersonRepo.save(contactPersonEntities);
+        }
+
+        // Return the brand with updated contact persons
+        const updatedBrand = await brandRepo.findOne({
+            where: { id: brand.id },
+            relations: ["owners", "contactPersons"],
+        });
+
+        return updatedBrand;
     }
 
     // Update an existing brand
-    async updateBrand(brandId: number, brandData: any) {
+    async updateBrand(brandId: number, brandData: brandTypes) {
         const brandRepo = AppDataSource.getRepository(Brand);
         const brand = await brandRepo.findOneBy({ id: brandId });
 
@@ -207,7 +238,7 @@ class AdminService {
 
     // List all TOs above a user in the hierarchy
     async listUsersWithTOHierarchy(userId: number) {
-        const userRepo = AppDataSource.getRepository(User);
+        const userRepo = AppDataSource.getTreeRepository(User);
         const user = await userRepo.findOne({
             where: { id: userId },
             relations: ["team.teamOwner"],
@@ -249,6 +280,28 @@ class AdminService {
                 });
             } else {
                 break;
+            }
+        }
+
+        return false;
+    }
+
+    // Check if a user can access another user's data
+    async canAccess(requester: User, targetUser: User): Promise<boolean> {
+        const hierarchy = await teamService.getTeamHierarchy(requester.id);
+
+        return this.isDescendant(hierarchy, targetUser.id);
+    }
+
+    // Recursively check if a user is a descendant in the hierarchy
+    isDescendant(hierarchy: any, targetUserId: number): boolean {
+        if (hierarchy.user.id === targetUserId) {
+            return true;
+        }
+
+        for (const child of hierarchy.children) {
+            if (this.isDescendant(child, targetUserId)) {
+                return true;
             }
         }
 

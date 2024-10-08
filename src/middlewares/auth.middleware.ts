@@ -60,7 +60,7 @@ export const authentication = catchAsync(
         if (!token) {
             return res
                 .status(httpStatus.UNAUTHORIZED)
-                .json({ message: "Invalid Token" });
+                .json({ success: false, message: "Invalid Token" });
         }
 
         try {
@@ -77,7 +77,10 @@ export const authentication = catchAsync(
             if (!user) {
                 return res
                     .status(httpStatus.UNAUTHORIZED)
-                    .json({ error: "User not found" });
+                    .json({
+                        success: false,
+                        error: "Logged in User not found",
+                    });
             }
 
             // Attach the full user object to the request

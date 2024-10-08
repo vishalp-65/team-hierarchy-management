@@ -44,4 +44,11 @@ export class User {
 
     @ManyToMany(() => Brand, (brand) => brand.owners)
     brands: Brand[];
+
+    // Parent-child relationship
+    @ManyToOne(() => User, (user) => user.children)
+    manager: User; // This is the "parent"
+
+    @OneToMany(() => User, (user) => user.manager)
+    children: User[]; // These are the "children"
 }

@@ -4,15 +4,17 @@ import {
     Column,
     ManyToMany,
     JoinTable,
+    OneToMany,
 } from "typeorm";
 import { User } from "./User";
+import { ContactPerson } from "./ContactPerson";
 
 @Entity("brand")
 export class Brand {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column({ length: 100 })
+    @Column({ length: 100, unique: true })
     brand_name: string;
 
     @Column("decimal")
@@ -21,14 +23,8 @@ export class Brand {
     @Column("decimal")
     deal_closed_value: number;
 
-    @Column({ length: 50 })
-    contact_person_name: string;
-
-    @Column({ length: 15 })
-    contact_person_phone: string;
-
-    @Column({ length: 100 })
-    contact_person_email: string;
+    @OneToMany(() => ContactPerson, (contactPerson) => contactPerson.brand)
+    contactPersons: ContactPerson[];
 
     @ManyToMany(() => User, (user) => user.brands)
     @JoinTable({

@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+import httpStatus from "http-status";
 import { ZodError } from "zod";
 
 const errorMiddleware = (
@@ -22,7 +23,7 @@ const errorMiddleware = (
     }
 
     // Handle other types of errors
-    return res.status(err.statusCode || 500).json({
+    return res.status(err.statusCode || httpStatus.INTERNAL_SERVER_ERROR).json({
         success: false,
         message: err.message || "Internal Server Error",
     });

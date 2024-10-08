@@ -6,12 +6,12 @@ import httpStatus from "http-status";
 export const listTeammates = catchAsync(async (req: Request, res: Response) => {
     const userId = req.user.id;
     const teammates = await userService.listTeammates(userId);
-    res.status(httpStatus.OK).json({ sucess: true, teammates });
+    res.status(httpStatus.OK).json({ success: true, teammates });
 });
 
 export const searchUser = catchAsync(async (req: Request, res: Response) => {
     const searchTerm = req.query.q as string;
     console.log("search term", searchTerm);
     const users = await userService.searchUser(searchTerm);
-    res.status(httpStatus.OK).json({ sucess: true, users });
+    res.status(httpStatus.OK).json({ success: true, users });
 });

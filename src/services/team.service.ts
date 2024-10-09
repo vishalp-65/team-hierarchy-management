@@ -50,10 +50,10 @@ class TeamService {
 
             while (queue.length > 0) {
                 const currentUser = queue.shift();
-                const currentHierarchy = userHierarchyMap.get(currentUser.id);
+                const currentHierarchy = userHierarchyMap.get(currentUser?.id!);
 
                 // Get subordinates from the managerMap
-                const subordinates = managerMap.get(currentUser.id) || [];
+                const subordinates = managerMap.get(currentUser?.id!) || [];
 
                 // For each subordinate, add them to the hierarchy and queue
                 subordinates.forEach((subordinate) => {

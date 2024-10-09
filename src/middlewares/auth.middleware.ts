@@ -5,9 +5,13 @@ import { User } from "../entities/User";
 import httpStatus from "http-status";
 import catchAsync from "../utils/catchAsync";
 
+export interface IGetUserAuthInfoRequest extends Request {
+    user: User; // or any other type
+}
+
 // Middleware to check if user is admin
 export const checkAdmin = catchAsync(
-    async (req: Request, res: Response, next: NextFunction) => {
+    async (req: IGetUserAuthInfoRequest, res: Response, next: NextFunction) => {
         const userId = req.user?.id; // Assuming userId is set by authentication middleware
         console.log("user id", userId);
         const userRepo = AppDataSource.getRepository(User);
@@ -29,7 +33,11 @@ export const checkAdmin = catchAsync(
 );
 
 export const authorizeRoles = (roles: string[]) => {
-    return (req: Request, res: Response, next: NextFunction) => {
+    return (
+        req: IGetUserAuthInfoRequest,
+        res: Response,
+        next: NextFunction
+    ) => {
         const userRoles = req.user.roles.map((role: any) => role.role_name);
         const hasRole = roles.some((role) => userRoles.includes(role));
 
@@ -46,7 +54,7 @@ export const authorizeRoles = (roles: string[]) => {
 };
 
 export const authentication = catchAsync(
-    async (req: Request, res: Response, next: NextFunction) => {
+    async (req: IGetUserAuthInfoRequest, res: Response, next: NextFunction) => {
         const header = req.headers["authorization"];
 
         if (!header) {
@@ -75,12 +83,10 @@ export const authentication = catchAsync(
             });
 
             if (!user) {
-                return res
-                    .status(httpStatus.UNAUTHORIZED)
-                    .json({
-                        success: false,
-                        error: "Logged in User not found",
-                    });
+                return res.status(httpStatus.UNAUTHORIZED).json({
+                    success: false,
+                    error: "Logged in User not found",
+                });
             }
 
             // Attach the full user object to the request

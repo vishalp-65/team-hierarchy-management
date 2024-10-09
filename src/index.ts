@@ -8,7 +8,7 @@ import httpStatus from "http-status";
 import errorHandler from "./middlewares/errorHandler";
 import apiRoutes from "./routes/index";
 import AppDataSource from "./data-source";
-import { seedRoles } from "./seeds/roles.seed";
+import { deleteSchema, seedRoles } from "./seeds/roles.seed";
 import swaggerRoutes from "./config/swagger";
 
 dotenv.config(); // Load environment variables
@@ -39,6 +39,7 @@ app.use(errorHandler);
 AppDataSource.initialize()
     .then(() => {
         console.log("Data Source has been initialized!");
+        // deleteSchema();
         seedRoles().then(() => {
             app.listen(config.PORT, () => {
                 console.log(`Server running at ${config.PORT}`);

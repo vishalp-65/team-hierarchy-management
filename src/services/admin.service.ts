@@ -25,7 +25,7 @@ class AdminService {
 
         // Fetch Role entities based on role names
         const roles = await roleRepo.find({
-            where: { role_name: In(userData.roles) },
+            where: { role_name: In(userData.roles!) },
         });
 
         // Validate roles
@@ -63,7 +63,7 @@ class AdminService {
         if (hasTO) {
             const hasCycle = await this.checkForCyclicHierarchy(
                 user,
-                userData.managerId
+                userData.managerId!
             );
             if (hasCycle) {
                 throw new ApiError(

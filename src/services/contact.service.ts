@@ -55,9 +55,9 @@ class ContactPersonService {
         }
 
         // Update contact details
-        contactPerson.contact_person_name = contactData.contact_person_name;
-        contactPerson.contact_person_phone = contactData.contact_person_phone;
-        contactPerson.contact_person_email = contactData.contact_person_email;
+        contactPerson.contact_person_name = contactData.contact_person_name!;
+        contactPerson.contact_person_phone = contactData.contact_person_phone!;
+        contactPerson.contact_person_email = contactData.contact_person_email!;
 
         await contactPersonRepo.save(contactPerson);
 

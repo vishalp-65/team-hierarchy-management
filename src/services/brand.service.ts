@@ -71,9 +71,9 @@ class BrandService {
         }
 
         // Update only the required fields
-        brand.brand_name = brandData.brand_name;
-        brand.revenue = brandData.revenue;
-        brand.deal_closed_value = brandData.deal_closed_value;
+        brand.brand_name = brandData.brand_name!;
+        brand.revenue = brandData.revenue!;
+        brand.deal_closed_value = brandData.deal_closed_value!;
 
         // Save the updated brand
         await brandRepo.save(brand);
@@ -184,13 +184,13 @@ class BrandService {
         while (queue.length > 0) {
             const currentUser = queue.shift();
 
-            if (currentUser.id === targetUserId) {
+            if (currentUser?.id === targetUserId) {
                 return true;
             }
 
             // Fetch direct subordinates of currentUser
             const subordinates = await userRepo.find({
-                where: { manager: { id: currentUser.id } },
+                where: { manager: { id: currentUser?.id } },
             });
 
             queue = queue.concat(subordinates);

@@ -17,7 +17,7 @@ export const createUser = catchAsync(async (req: Request, res: Response) => {
 
 // Update an existing user
 export const updateUser = catchAsync(async (req: Request, res: Response) => {
-    const userId = Number(req.params.id);
+    const userId = req.params.id;
     const validatedData = userSchema.partial().parse(req.body);
     const user = await adminService.updateUser(userId, validatedData);
     res.status(httpStatus.OK).json({ success: true, user });
@@ -32,7 +32,7 @@ export const createBrand = catchAsync(async (req: Request, res: Response) => {
 
 // Update an existing brand
 export const updateBrand = catchAsync(async (req: Request, res: Response) => {
-    const brandId = Number(req.params.id);
+    const brandId = req.params.id;
     const validatedData = brandSchema.partial().parse(req.body);
     const brand = await adminService.updateBrand(brandId, validatedData);
     res.status(httpStatus.OK).json({ success: true, brand });
@@ -53,7 +53,7 @@ export const assignRoleToUser = catchAsync(
 // List TOs above a user in the hierarchy
 export const listUsersWithTOHierarchy = catchAsync(
     async (req: Request, res: Response) => {
-        const userId = Number(req.params.userId);
+        const userId = req.params.userId;
         if (!userId) {
             res.status(httpStatus.BAD_REQUEST).json({
                 success: false,

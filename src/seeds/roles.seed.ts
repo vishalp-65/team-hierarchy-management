@@ -9,7 +9,7 @@ import { User } from "../entities/User";
 export const seedRoles = async () => {
     const roleRepo = AppDataSource.getRepository(Role);
 
-    const defaultRoles = ["ADMIN", "PO", "BO", "TO"];
+    const defaultRoles = ["ADMIN", "Manager", "PO", "BO", "TO"];
 
     // Check if roles already exist
     const existingRoles = await roleRepo.find();

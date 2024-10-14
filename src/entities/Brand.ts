@@ -11,8 +11,8 @@ import { ContactPerson } from "./ContactPerson";
 
 @Entity("brand")
 export class Brand {
-    @PrimaryGeneratedColumn()
-    id: number;
+    @PrimaryGeneratedColumn("uuid")
+    id: string;
 
     @Column({ length: 100, unique: true })
     brand_name: string;

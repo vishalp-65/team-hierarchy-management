@@ -73,7 +73,7 @@ export const authentication = catchAsync(
 
         try {
             // Assuming the token is user_id itself, no decoding is necessary
-            const userId = parseInt(token); // In a real-world scenario, we'll verify the token (JWT, etc.)
+            const userId = token; // In a real-world scenario, we'll verify the token (JWT, etc.)
 
             // Fetch the full user from the database
             const userRepo = AppDataSource.getRepository(User);

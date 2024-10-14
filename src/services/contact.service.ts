@@ -6,7 +6,7 @@ import { contactPerson } from "../types/types";
 import { ContactPerson } from "../entities/ContactPerson";
 
 class ContactPersonService {
-    async createContact(brandId: number, contactData: contactPerson) {
+    async createContact(brandId: string, contactData: contactPerson) {
         const brandRepo = AppDataSource.getRepository(Brand);
         const contactPersonRepo = AppDataSource.getRepository(ContactPerson);
 
@@ -39,7 +39,7 @@ class ContactPersonService {
         return updatedBrand;
     }
 
-    async updateContact(brandId: number, contactData: contactPerson) {
+    async updateContact(brandId: string, contactData: contactPerson) {
         const contactPersonRepo = AppDataSource.getRepository(ContactPerson);
         const brandRepo = AppDataSource.getRepository(Brand);
 

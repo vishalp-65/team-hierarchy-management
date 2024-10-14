@@ -1,3 +1,4 @@
+// src/entities/User.ts
 import {
     Entity,
     PrimaryGeneratedColumn,
@@ -10,11 +11,14 @@ import {
 import { Team } from "./Team";
 import { Role } from "./Role";
 import { Brand } from "./Brand";
+import { Task } from "./Task";
+import { Comment } from "./Comment";
+import { Notification } from "./Notification";
 
 @Entity("users")
 export class User {
-    @PrimaryGeneratedColumn()
-    id: number;
+    @PrimaryGeneratedColumn("uuid")
+    id: string;
 
     @Column({ length: 45 })
     user_name: string;
@@ -25,7 +29,7 @@ export class User {
     @Column({ length: 15 })
     phone_number: string;
 
-    @Column({ length: 100 })
+    @Column({ length: 100, unique: true })
     email: string;
 
     @ManyToMany(() => Role, (role) => role.users, { cascade: true })
@@ -51,4 +55,17 @@ export class User {
 
     @OneToMany(() => User, (user) => user.manager)
     children: User[]; // These are the "children"
+
+    // Task Relations
+    @OneToMany(() => Task, (task) => task.creator)
+    tasksCreated: Task[];
+
+    @OneToMany(() => Task, (task) => task.assignee)
+    tasksAssigned: Task[];
+
+    @OneToMany(() => Comment, (comment) => comment.author)
+    comments: Comment[];
+
+    @OneToMany(() => Notification, (notification) => notification.recipient)
+    notifications: Notification[];
 }

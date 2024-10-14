@@ -5,7 +5,7 @@ export interface brandTypes {
     contact_person_name?: string;
     contact_person_phone?: string;
     contact_person_email?: string;
-    ownerIds?: number[];
+    ownerIds?: string[];
 }
 
 enum roles {}
@@ -15,8 +15,8 @@ export interface usersTypes {
     password?: string;
     phone_number?: string;
     email?: string;
-    roles?: ("ADMIN" | "PO" | "BO" | "TO")[];
-    managerId?: number;
+    roles?: ("ADMIN" | "MG" | "PO" | "BO" | "TO")[];
+    managerId?: string;
 }
 
 export interface contactPerson {

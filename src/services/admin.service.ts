@@ -86,7 +86,7 @@ class AdminService {
     }
 
     // Update an existing user
-    async updateUser(userId: number, userData: usersTypes) {
+    async updateUser(userId: string, userData: usersTypes) {
         const userRepo = AppDataSource.getRepository(User);
         const roleRepo = AppDataSource.getRepository(Role);
         const teamRepo = AppDataSource.getRepository(Team);
@@ -223,7 +223,7 @@ class AdminService {
     }
 
     // Update an existing brand
-    async updateBrand(brandId: number, brandData: brandTypes) {
+    async updateBrand(brandId: string, brandData: brandTypes) {
         const brandRepo = AppDataSource.getRepository(Brand);
         const userRepo = AppDataSource.getRepository(User);
 
@@ -256,7 +256,7 @@ class AdminService {
     }
 
     // Assign roles to a user
-    async assignRoleToUser(userId: number, roleIds: number[]) {
+    async assignRoleToUser(userId: string, roleIds: number[]) {
         const userRepo = AppDataSource.getRepository(User);
         const roleRepo = AppDataSource.getRepository(Role);
 
@@ -275,7 +275,7 @@ class AdminService {
     }
 
     // List all TOs (Team Owners) above a user in the hierarchy
-    async listUsersWithTOHierarchy(userId?: number) {
+    async listUsersWithTOHierarchy(userId?: string) {
         const userRepo = AppDataSource.getRepository(User);
 
         // Fetch the user along with their manager and roles
@@ -320,7 +320,7 @@ class AdminService {
     // Check for cyclic hierarchy
     async checkForCyclicHierarchy(
         user: User,
-        managerId: number
+        managerId: string
     ): Promise<boolean> {
         if (!managerId) return false; // If no managerId provided, no cycle is possible
 

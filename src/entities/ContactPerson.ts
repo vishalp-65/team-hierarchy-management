@@ -3,8 +3,8 @@ import { Brand } from "./Brand";
 
 @Entity("contact_persons")
 export class ContactPerson {
-    @PrimaryGeneratedColumn()
-    id: number;
+    @PrimaryGeneratedColumn("uuid")
+    id: string;
 
     @Column()
     contact_person_name: string;

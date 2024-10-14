@@ -57,7 +57,7 @@ class BrandService {
     }
 
     // Update brand
-    async updateBrand(user: any, brandId: number, brandData: brandTypes) {
+    async updateBrand(user: any, brandId: string, brandData: brandTypes) {
         const brandRepo = AppDataSource.getRepository(Brand);
 
         // Find the existing brand by its ID
@@ -87,7 +87,7 @@ class BrandService {
         return updatedBrand;
     }
 
-    async getBrandsOwnedByUser(userId: number) {
+    async getBrandsOwnedByUser(userId: string) {
         const brandRepo = AppDataSource.getRepository(Brand);
 
         // Fetch all brands owned by the user, including contact persons
@@ -99,7 +99,7 @@ class BrandService {
         return brands;
     }
 
-    async getBrandDetails(userId: number, brandId: number) {
+    async getBrandDetails(userId: string, brandId: string) {
         const userRepo = AppDataSource.getRepository(User);
         const brandRepo = AppDataSource.getRepository(Brand);
 
@@ -174,7 +174,7 @@ class BrandService {
     // Helper function to check if targetUserId is in requester's hierarchy
     async isUserInHierarchy(
         requester: User,
-        targetUserId: number
+        targetUserId: string
     ): Promise<boolean> {
         const userRepo = AppDataSource.getRepository(User);
 

@@ -19,7 +19,7 @@ export const createBrand = catchAsync(
 export const UpdateBrand = catchAsync(
     async (req: IGetUserAuthInfoRequest, res: Response) => {
         // Validate the request body
-        const brandId = Number(req.params.id);
+        const brandId = req.params.id;
         const validatedBrand = brandSchema.parse(req.body);
 
         // Save or update the brand
@@ -41,7 +41,7 @@ export const getBrands = catchAsync(
 
 export const getBrandDetails = catchAsync(
     async (req: IGetUserAuthInfoRequest, res: Response) => {
-        const brandId = parseInt(req.params.brandId, 10);
+        const brandId = req.params.brandId;
         const userId = req.user.id;
         const result = await brandService.getBrandDetails(userId, brandId);
         res.status(httpStatus.OK).json({ success: true, result });

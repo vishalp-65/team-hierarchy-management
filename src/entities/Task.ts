@@ -14,6 +14,7 @@ import { TaskHistory } from "./TaskHistory";
 import { Comment } from "./Comment";
 import { taskStatus, taskType } from "../constant/enums";
 import { Inventory } from "./Inventory";
+import { Event } from "./Event";
 
 @Entity("tasks")
 export class Task {
@@ -68,4 +69,5 @@ export class Task {
 
     @UpdateDateColumn()
     updated_at: Date;
+    task: globalThis.Event;
 }

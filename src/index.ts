@@ -39,7 +39,6 @@ app.use(errorHandler);
 AppDataSource.initialize()
     .then(() => {
         console.log("Data Source has been initialized!");
-        // deleteSchema();
         seedRoles().then(() => {
             app.listen(config.PORT, () => {
                 console.log(`Server running at ${config.PORT}`);

@@ -8,6 +8,17 @@ export interface brandTypes {
     ownerIds?: string[];
 }
 
+export interface TaskTypes {
+    title?: string;
+    description?: string;
+    task_type?: "general" | "brand" | "event" | "inventory";
+    due_date?: string;
+    assigneeId?: string;
+    brandId?: string;
+    eventId?: string;
+    inventoryId?: string;
+}
+
 enum roles {}
 
 export interface usersTypes {

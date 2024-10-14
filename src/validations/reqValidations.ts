@@ -6,7 +6,7 @@ export const userSchema = z.object({
     phone_number: z.string().length(10, "Phone number is required"),
     email: z.string().email("Valid email is required"),
     roles: z
-        .array(z.enum(["ADMIN", "PO", "BO", "TO"]))
+        .array(z.enum(["ADMIN", "MG", "PO", "BO", "TO"]))
         .min(1, "At least one role is required"),
     managerId: z.string().optional(), // Optional field for hierarchy
 });

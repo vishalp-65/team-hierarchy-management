@@ -4,7 +4,7 @@ import { ApiError } from "../utils/ApiError";
 import httpStatus from "http-status";
 
 class UserService {
-    async listTeammates(userId: number) {
+    async listTeammates(userId: string) {
         const userRepo = AppDataSource.getRepository(User);
         const user = await userRepo.findOne({
             where: { id: userId },

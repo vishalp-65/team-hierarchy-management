@@ -4,7 +4,7 @@ import { ApiError } from "../utils/ApiError";
 import httpStatus from "http-status";
 
 class TeamService {
-    async getTeamHierarchy(userId: number) {
+    async getTeamHierarchy(userId: string) {
         const userRepo = AppDataSource.getRepository(User);
 
         // Fetch all users and their managers in a single query
@@ -31,7 +31,7 @@ class TeamService {
         }
 
         // Build a map of users grouped by their managerId
-        const managerMap = new Map<number, User[]>();
+        const managerMap = new Map<string, User[]>();
         allUsers.forEach((user) => {
             if (user.manager && user.manager.id) {
                 if (!managerMap.has(user.manager.id)) {
@@ -45,7 +45,7 @@ class TeamService {
         const buildHierarchy = (rootUser: User) => {
             const queue = [rootUser];
             const hierarchy = { ...rootUser, hierarchy: [] };
-            const userHierarchyMap = new Map<number, any>();
+            const userHierarchyMap = new Map<string, any>();
             userHierarchyMap.set(rootUser.id, hierarchy);
 
             while (queue.length > 0) {

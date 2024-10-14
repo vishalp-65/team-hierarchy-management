@@ -6,7 +6,7 @@ import { contactService } from "../services/contact.service";
 
 // Create a new contact for a brand
 export const createContact = catchAsync(async (req: Request, res: Response) => {
-    const brandId = parseInt(req.params.brandId, 10);
+    const brandId = req.params.brandId;
     const validatedContact = contactSchema.parse(req.body);
 
     // Create contact and return updated brand details
@@ -16,7 +16,7 @@ export const createContact = catchAsync(async (req: Request, res: Response) => {
 
 // Update contact for a brand
 export const updateContact = catchAsync(async (req: Request, res: Response) => {
-    const brandId = parseInt(req.params.brandId, 10);
+    const brandId = req.params.brandId;
     const validatedContact = contactSchema.parse(req.body);
 
     // Update contact and return updated brand details

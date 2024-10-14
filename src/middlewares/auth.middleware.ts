@@ -4,6 +4,7 @@ import AppDataSource from "../data-source";
 import { User } from "../entities/User";
 import httpStatus from "http-status";
 import catchAsync from "../utils/catchAsync";
+import { Task } from "../entities/Task";
 
 export interface IGetUserAuthInfoRequest extends Request {
     user: User; // or any other type
@@ -101,3 +102,53 @@ export const authentication = catchAsync(
         }
     }
 );
+
+export const checkTaskPermissions = async (
+    req: IGetUserAuthInfoRequest,
+    res: Response,
+    next: NextFunction
+) => {
+    const { taskId } = req.params;
+    const user = req.user;
+
+    const taskRepo = AppDataSource.getRepository(Task);
+    const task = await taskRepo.findOne({
+        where: { id: taskId },
+        relations: ["creator", "assignee"],
+    });
+
+    if (!task) {
+        throw new ApiError(httpStatus.NOT_FOUND, "Task not found");
+    }
+
+    const userRoles = user.roles.map((role) => role.role_name);
+
+    if (userRoles.includes("ADMIN") || userRoles.includes("MG")) {
+        // Admin and Management have full access
+        return next();
+    }
+
+    if (userRoles.includes("TO")) {
+        // Team Owners can access their team members' tasks
+        if (task.assignee.team && task.assignee.team.teamOwner.id === user.id) {
+            return next();
+        }
+    }
+
+    if (userRoles.includes("PO") || userRoles.includes("BO")) {
+        // Project Owners and Brand Owners can access their own and delegated tasks
+        if (task.creator.id === user.id || task.assignee.id === user.id) {
+            return next();
+        }
+    }
+
+    // Regular users can access their own and delegated tasks
+    if (task.creator.id === user.id || task.assignee.id === user.id) {
+        return next();
+    }
+
+    throw new ApiError(
+        httpStatus.FORBIDDEN,
+        "You do not have permission to access this task"
+    );
+};

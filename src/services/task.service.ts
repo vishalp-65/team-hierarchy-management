@@ -10,6 +10,7 @@ import AppDataSource from "../data-source";
 import { NotificationServiceInstance } from "./notification.service";
 import { Event } from "../entities/Event";
 import { TaskTypes } from "../types/types";
+import { SelectQueryBuilder } from "typeorm";
 
 class TaskService {
     async createTask(data: TaskTypes, creator: User): Promise<Task> {
@@ -90,6 +91,120 @@ class TaskService {
         );
 
         return task;
+    }
+
+    async getTasks(user: User, filters: any): Promise<Task[]> {
+        const taskRepo = AppDataSource.getRepository(Task);
+
+        const query = taskRepo
+            .createQueryBuilder("task")
+            .leftJoinAndSelect("task.creator", "creator")
+            .leftJoinAndSelect("task.assignee", "assignee")
+            .leftJoinAndSelect("task.brand", "brand")
+            .leftJoinAndSelect("task.event", "event")
+            .leftJoinAndSelect("task.inventory", "inventory")
+            .leftJoinAndSelect("task.comments", "comments")
+            .leftJoinAndSelect("comments.author", "commentAuthor")
+            .leftJoinAndSelect("task.history", "history")
+            .leftJoinAndSelect("history.performed_by", "historyUser");
+
+        // Apply Role-based Access Control
+        this.applyRBAC(query, user);
+
+        // Apply Filters
+        this.applyFilters(query, filters, user);
+
+        // Apply Sorting
+        this.applySorting(query, filters);
+
+        return query.getMany();
+    }
+
+    private applyRBAC(query: SelectQueryBuilder<Task>, user: User) {
+        const userRoles = user.roles.map((role) => role.role_name);
+
+        if (userRoles.includes("ADMIN") || userRoles.includes("MG")) {
+            // Admin and Management can view all tasks
+            return;
+        } else if (userRoles.includes("TO")) {
+            // Team Owners can see their team members' tasks
+            query.where("task.assigneeId IN (:...teamMemberIds)", {
+                teamMemberIds: user.children.map((child) => child.id),
+            });
+        } else if (userRoles.includes("PO") || userRoles.includes("BO")) {
+            // Project Owners and Brand Owners can see their own and delegated tasks
+            query.where(
+                "task.assigneeId = :userId OR task.creatorId = :userId",
+                { userId: user.id }
+            );
+        } else {
+            // Regular users can see their own and delegated tasks
+            query.where(
+                "task.assigneeId = :userId OR task.creatorId = :userId",
+                { userId: user.id }
+            );
+        }
+    }
+
+    private async applyFilters(
+        query: SelectQueryBuilder<Task>,
+        filters: any,
+        user: User
+    ) {
+        if (filters.taskType) {
+            query.andWhere("task.task_type = :taskType", {
+                taskType: filters.taskType,
+            });
+        }
+        if (filters.assignedBy) {
+            query.andWhere("creator.id = :assignedBy", {
+                assignedBy: filters.assignedBy,
+            });
+        }
+        if (filters.assignedTo) {
+            query.andWhere("assignee.id = :assignedTo", {
+                assignedTo: filters.assignedTo,
+            });
+        }
+        if (filters.teamOwner) {
+            const teamOwnerIds = await this.getTeamOwnerIds(user);
+            query.andWhere("task.assigneeId IN (:...teamOwnerIds)", {
+                teamOwnerIds,
+            });
+        }
+        if (filters.dueDatePassed) {
+            query.andWhere("task.due_date < :now", { now: new Date() });
+        }
+        if (filters.brandName) {
+            query.andWhere("brand.brand_name LIKE :brandName", {
+                brandName: `%${filters.brandName}%`,
+            });
+        }
+        if (filters.inventoryName) {
+            query.andWhere("inventory.name LIKE :inventoryName", {
+                inventoryName: `%${filters.inventoryName}%`,
+            });
+        }
+        if (filters.eventName) {
+            query.andWhere("event.name LIKE :eventName", {
+                eventName: `%${filters.eventName}%`,
+            });
+        }
+    }
+
+    private applySorting(query: SelectQueryBuilder<Task>, filters: any) {
+        if (filters.sortBy && filters.order) {
+            query.orderBy(
+                `task.${filters.sortBy}`,
+                filters.order.toUpperCase() as "ASC" | "DESC"
+            );
+        }
+    }
+
+    private async getTeamOwnerIds(user: User): Promise<string[]> {
+        // Implement multilevel TO visibility logic
+        // For simplicity, returning team members' IDs
+        return user.children.map((child) => child.id);
     }
 }
 

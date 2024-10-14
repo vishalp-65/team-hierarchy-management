@@ -18,3 +18,12 @@ export const createTask = catchAsync(
         res.status(httpStatus.CREATED).json({ success: true, task });
     }
 );
+
+// Get tasks with filters
+export const getTasks = catchAsync(
+    async (req: IGetUserAuthInfoRequest, res: Response) => {
+        const filters = TaskValidationInstance.getTasks(req.query);
+        const tasks = await TaskServiceInstance.getTasks(req.user, filters);
+        res.status(httpStatus.OK).json({ success: true, tasks });
+    }
+);

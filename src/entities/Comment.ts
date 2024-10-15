@@ -17,7 +17,9 @@ export class Comment {
     @Column({ type: "text" })
     content: string;
 
-    @ManyToOne(() => Task, (task) => task.comments)
+    @ManyToOne(() => Task, (task) => task.comments, {
+        onDelete: "CASCADE",
+    })
     task: Task;
 
     @ManyToOne(() => User, (user) => user.comments)

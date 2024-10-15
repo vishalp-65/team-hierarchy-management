@@ -118,7 +118,9 @@ export const checkTaskPermissions = async (
     });
 
     if (!task) {
-        throw new ApiError(httpStatus.NOT_FOUND, "Task not found");
+        return res
+            .status(httpStatus.NOT_FOUND)
+            .json({ success: false, error: "Task not found" });
     }
 
     const userRoles = user.roles.map((role) => role.role_name);
@@ -147,8 +149,10 @@ export const checkTaskPermissions = async (
         return next();
     }
 
-    throw new ApiError(
-        httpStatus.FORBIDDEN,
-        "You do not have permission to access this task"
-    );
+    return res
+        .status(httpStatus.FORBIDDEN)
+        .json({
+            success: false,
+            error: "You do not have permission to access this task",
+        });
 };

@@ -12,14 +12,12 @@ export interface TaskTypes {
     title?: string;
     description?: string;
     task_type?: "general" | "brand" | "event" | "inventory";
-    due_date?: string;
+    due_date?: Date;
     assigneeId?: string;
     brandId?: string;
     eventId?: string;
     inventoryId?: string;
 }
-
-enum roles {}
 
 export interface usersTypes {
     user_name?: string;

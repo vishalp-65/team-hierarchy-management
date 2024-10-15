@@ -5,11 +5,34 @@ export const createTaskSchema = z.object({
     title: z.string().min(1, "Title is required"),
     description: z.string().optional(),
     task_type: z.enum(["general", "brand", "event", "inventory"]),
-    due_date: z.string().optional(), // ISO date string
-    assigneeId: z.string().min(1, "Comment content is required"),
+    due_date: z
+        .string({ required_error: "Due date is required" })
+        .refine((val) => !isNaN(Date.parse(val)), {
+            message: "Invalid date format",
+        })
+        .refine((val) => new Date(val) > new Date(), {
+            message: "Due date must be in the future",
+        })
+        .transform((val) => new Date(val)),
+    assigneeId: z.string().min(1, "AssigneeId is required"),
     brandId: z.string().optional(),
     eventId: z.string().optional(),
     inventoryId: z.string().optional(),
+});
+
+export const editTaskSchema = z.object({
+    title: z.string().optional(),
+    description: z.string().optional(),
+    due_date: z
+        .string()
+        .optional()
+        .refine((val) => !isNaN(Date.parse(val)), {
+            message: "Invalid date format",
+        })
+        .refine((val) => new Date(val) > new Date(), {
+            message: "Due date must be in the future",
+        })
+        .transform((val) => new Date(val)),
 });
 
 export const getTasksSchema = z.object({
@@ -38,8 +61,19 @@ class TaskValidation {
         return createTaskSchema.safeParse(data);
     }
 
+    editTask(data: any) {
+        return editTaskSchema.safeParse(data);
+    }
+
     getTasks(data: any) {
         return getTasksSchema.safeParse(data);
+    }
+    updateTaskStatus(data: any) {
+        return updateTaskStatusSchema.safeParse(data);
+    }
+
+    addComment(data: any) {
+        return addCommentSchema.safeParse(data);
     }
 }
 

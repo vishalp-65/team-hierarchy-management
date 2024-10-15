@@ -11,8 +11,11 @@ import { NotificationServiceInstance } from "./notification.service";
 import { Event } from "../entities/Event";
 import { TaskTypes } from "../types/types";
 import { SelectQueryBuilder } from "typeorm";
+import { Comment } from "../entities/Comment";
+import { Notification } from "../entities/Notification";
 
 class TaskService {
+    // Create a new task
     async createTask(data: TaskTypes, creator: User): Promise<Task> {
         const taskRepo = AppDataSource.getRepository(Task);
         const userRepo = AppDataSource.getRepository(User);
@@ -93,6 +96,7 @@ class TaskService {
         return task;
     }
 
+    // Get all task with filter and sorting functionality
     async getTasks(user: User, filters: any): Promise<Task[]> {
         const taskRepo = AppDataSource.getRepository(Task);
 
@@ -108,15 +112,16 @@ class TaskService {
             .leftJoinAndSelect("task.history", "history")
             .leftJoinAndSelect("history.performed_by", "historyUser");
 
+        console.log("query");
         // Apply Role-based Access Control
         this.applyRBAC(query, user);
-
+        console.log("query2");
         // Apply Filters
         this.applyFilters(query, filters, user);
-
+        console.log("query3");
         // Apply Sorting
         this.applySorting(query, filters);
-
+        console.log("query4");
         return query.getMany();
     }
 
@@ -128,9 +133,17 @@ class TaskService {
             return;
         } else if (userRoles.includes("TO")) {
             // Team Owners can see their team members' tasks
-            query.where("task.assigneeId IN (:...teamMemberIds)", {
-                teamMemberIds: user.children.map((child) => child.id),
-            });
+            const teamMemberIds = user.children?.map((child) => child.id) || [];
+
+            // If no team members, avoid IN clause with empty array
+            if (teamMemberIds.length > 0) {
+                query.where("task.assigneeId IN (:...teamMemberIds)", {
+                    teamMemberIds,
+                });
+            } else {
+                // Handle case where TO has no team members
+                query.where("1 = 0"); // No tasks will be selected
+            }
         } else if (userRoles.includes("PO") || userRoles.includes("BO")) {
             // Project Owners and Brand Owners can see their own and delegated tasks
             query.where(
@@ -202,9 +215,223 @@ class TaskService {
     }
 
     private async getTeamOwnerIds(user: User): Promise<string[]> {
-        // Implement multilevel TO visibility logic
+        // TODO: Implement multilevel TO visibility logic
         // For simplicity, returning team members' IDs
         return user.children.map((child) => child.id);
+    }
+
+    async updateTaskStatus(
+        taskId: string,
+        status: string,
+        user: User
+    ): Promise<Task> {
+        const taskRepo = AppDataSource.getRepository(Task);
+        const historyRepo = AppDataSource.getRepository(TaskHistory);
+
+        const task = await taskRepo.findOne({
+            where: { id: taskId },
+            relations: ["creator", "assignee"],
+        });
+        if (!task) {
+            throw new ApiError(httpStatus.NOT_FOUND, "Task not found");
+        }
+
+        // Only assignee can mark as completed
+        if (status === "completed" && task.assignee.id !== user.id) {
+            throw new ApiError(
+                httpStatus.FORBIDDEN,
+                "Only assignee can mark the task as completed"
+            );
+        }
+
+        task.status = status;
+        await taskRepo.save(task);
+
+        // Log in history
+        const history = new TaskHistory();
+        history.task = task;
+        history.action = `Status changed to ${status}`;
+        history.performed_by = user;
+        await historyRepo.save(history);
+
+        return task;
+    }
+
+    // Edit task (title, description, due_date)
+    async editTask(
+        taskId: string,
+        data: Partial<TaskTypes>,
+        user: User
+    ): Promise<Task> {
+        const taskRepo = AppDataSource.getRepository(Task);
+        const historyRepo = AppDataSource.getRepository(TaskHistory);
+
+        // Find task with creator and assignee
+        const task = await taskRepo.findOne({
+            where: { id: taskId },
+            relations: ["creator", "assignee"],
+        });
+
+        if (!task) {
+            throw new ApiError(httpStatus.NOT_FOUND, "Task not found");
+        }
+
+        // Only the creator can edit the task
+        if (task.creator.id !== user.id) {
+            throw new ApiError(
+                httpStatus.FORBIDDEN,
+                "Only the task creator can edit the task"
+            );
+        }
+
+        // Prevent task type change after creation
+        if (data.task_type && data.task_type !== task.task_type) {
+            throw new ApiError(
+                httpStatus.BAD_REQUEST,
+                "Cannot change task type after creation"
+            );
+        }
+
+        // Update only fields that have been modified
+        if (data.title && data.title !== task.title) {
+            task.title = data.title;
+        }
+        if (data.description && data.description !== task.description) {
+            task.description = data.description;
+        }
+        if (data.due_date && new Date(data.due_date) !== task.due_date) {
+            task.due_date = new Date(data.due_date);
+        }
+
+        // Save the updated task
+        await taskRepo.save(task);
+
+        // Log the changes in history
+        const history = new TaskHistory();
+        history.task = task;
+        history.action = "Task updated";
+        history.performed_by = user;
+        history.action = this.getChangedFields(data, task); // Helper function to log changes
+        await historyRepo.save(history);
+
+        return task;
+    }
+
+    // Helper to track changed fields
+    private getChangedFields(newData: Partial<TaskTypes>, task: Task): string {
+        const changes: string[] = [];
+        if (newData.title && newData.title !== task.title) {
+            changes.push("title");
+        }
+        if (newData.description && newData.description !== task.description) {
+            changes.push("description");
+        }
+        if (newData.due_date && new Date(newData.due_date) !== task.due_date) {
+            changes.push("due_date");
+        }
+        return changes.join(", ");
+    }
+
+    // Delete task
+    async deleteTask(taskId: string, user: User): Promise<void> {
+        const taskRepo = AppDataSource.getRepository(Task);
+        const historyRepo = AppDataSource.getRepository(TaskHistory);
+        const commentRepo = AppDataSource.getRepository(Comment);
+        const notificationRepo = AppDataSource.getRepository(Notification);
+
+        // Find the task with relations
+        const task = await taskRepo.findOne({
+            where: { id: taskId },
+            relations: ["creator", "assignee", "comments", "history"],
+        });
+
+        if (!task) {
+            throw new ApiError(httpStatus.NOT_FOUND, "Task not found");
+        }
+
+        // Only the creator can delete the task
+        if (task.creator.id !== user.id) {
+            throw new ApiError(
+                httpStatus.FORBIDDEN,
+                "Only the task creator can delete the task"
+            );
+        }
+
+        // Delete related notifications
+        await notificationRepo
+            .createQueryBuilder()
+            .delete()
+            .where("taskId = :taskId", { taskId: task.id })
+            .execute();
+
+        // Delete related comments
+        await commentRepo
+            .createQueryBuilder()
+            .delete()
+            .where("taskId = :taskId", { taskId: task.id })
+            .execute();
+
+        // Delete related task history
+        await historyRepo
+            .createQueryBuilder()
+            .delete()
+            .where("taskId = :taskId", { taskId: task.id })
+            .execute();
+
+        // Delete the task itself
+        await taskRepo.delete(task.id);
+
+        return;
+    }
+
+    // Add comment on a Task
+    async addComment(
+        taskId: string,
+        content: string,
+        user: User
+    ): Promise<Comment> {
+        const taskRepo = AppDataSource.getRepository(Task);
+        const commentRepo = AppDataSource.getRepository(Comment);
+        const historyRepo = AppDataSource.getRepository(TaskHistory);
+
+        const task = await taskRepo.findOne({
+            where: { id: taskId },
+            relations: ["creator", "assignee"],
+        });
+        if (!task) {
+            throw new ApiError(httpStatus.NOT_FOUND, "Task not found");
+        }
+
+        const comment = new Comment();
+        comment.content = content;
+        comment.task = task;
+        comment.author = user;
+
+        await commentRepo.save(comment);
+
+        // Log in history
+        const history = new TaskHistory();
+        history.task = task;
+        history.action = "Comment Added";
+        history.performed_by = user;
+        await historyRepo.save(history);
+
+        // Notify relevant users
+        await NotificationServiceInstance.sendTaskNotification(
+            task.creator,
+            task,
+            `${user.user_name} commented on task "${task.title}".`
+        );
+
+        if (task.assignee.id !== user.id) {
+            await NotificationServiceInstance.sendTaskNotification(
+                task.assignee,
+                task,
+                `${user.user_name} commented on your task "${task.title}".`
+            );
+        }
+
+        return comment;
     }
 }
 

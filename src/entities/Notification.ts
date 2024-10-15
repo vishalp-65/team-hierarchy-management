@@ -20,7 +20,9 @@ export class Notification {
     @Column({ type: "text" })
     content: string;
 
-    @ManyToOne(() => Task, { nullable: true })
+    @ManyToOne(() => Task, (task) => task.notifications, {
+        onDelete: "CASCADE",
+    })
     task: Task;
 
     @Column({ default: false })

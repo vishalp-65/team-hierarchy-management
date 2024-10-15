@@ -15,6 +15,7 @@ import { Comment } from "./Comment";
 import { taskStatus, taskType } from "../constant/enums";
 import { Inventory } from "./Inventory";
 import { Event } from "./Event";
+import { Notification } from "./Notification";
 
 @Entity("tasks")
 export class Task {
@@ -48,7 +49,7 @@ export class Task {
     @ManyToOne(() => Event, { nullable: true })
     event: Event;
 
-    @ManyToOne(() => Inventory, { nullable: true }) // Establish the relationship with Inventory
+    @ManyToOne(() => Inventory, { nullable: true })
     inventory: Inventory;
 
     @Column({
@@ -63,6 +64,11 @@ export class Task {
 
     @OneToMany(() => Comment, (comment) => comment.task, { cascade: true })
     comments: Comment[];
+
+    @OneToMany(() => Notification, (notification) => notification.task, {
+        cascade: true,
+    })
+    notifications: Notification[];
 
     @CreateDateColumn()
     created_at: Date;

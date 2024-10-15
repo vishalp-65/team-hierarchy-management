@@ -10,6 +10,8 @@ import apiRoutes from "./routes/index";
 import AppDataSource from "./data-source";
 import { deleteSchema, seedRoles } from "./seeds/roles.seed";
 import swaggerRoutes from "./config/swagger";
+import cron from "node-cron";
+import { SLAServiceInstance } from "./services/sla.service";
 
 dotenv.config(); // Load environment variables
 
@@ -34,6 +36,12 @@ app.use((req, res, next) => {
 
 // Error handler middleware
 app.use(errorHandler);
+
+// Schedule to run every hour
+cron.schedule("0 * * * *", async () => {
+    console.log("Running SLA Monitor");
+    await SLAServiceInstance.monitorSLAs();
+});
 
 // Initialize the database and start the server
 AppDataSource.initialize()

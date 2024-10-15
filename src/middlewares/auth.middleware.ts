@@ -14,7 +14,6 @@ export interface IGetUserAuthInfoRequest extends Request {
 export const checkAdmin = catchAsync(
     async (req: IGetUserAuthInfoRequest, res: Response, next: NextFunction) => {
         const userId = req.user?.id; // Assuming userId is set by authentication middleware
-        console.log("user id", userId);
         const userRepo = AppDataSource.getRepository(User);
 
         const user = await userRepo.findOne({
@@ -149,10 +148,8 @@ export const checkTaskPermissions = async (
         return next();
     }
 
-    return res
-        .status(httpStatus.FORBIDDEN)
-        .json({
-            success: false,
-            error: "You do not have permission to access this task",
-        });
+    return res.status(httpStatus.FORBIDDEN).json({
+        success: false,
+        error: "You do not have permission to access this task",
+    });
 };

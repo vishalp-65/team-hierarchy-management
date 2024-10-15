@@ -22,7 +22,6 @@ export const createTask = catchAsync(
 export const getTasks = catchAsync(
     async (req: IGetUserAuthInfoRequest, res: Response) => {
         const filters = TaskValidationInstance.getTasks(req.query);
-        console.log("getting task", filters.data);
         const tasks = await TaskServiceInstance.getTasks(
             req.user,
             filters.data
@@ -90,5 +89,14 @@ export const addComment = catchAsync(
             req.user
         );
         res.status(httpStatus.CREATED).json({ success: true, comment });
+    }
+);
+
+// Get task history
+export const getTaskHistory = catchAsync(
+    async (req: IGetUserAuthInfoRequest, res: Response) => {
+        const { taskId } = req.params;
+        const history = await TaskServiceInstance.getTaskHistory(taskId);
+        res.status(httpStatus.OK).json({ success: true, history });
     }
 );

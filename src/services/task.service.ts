@@ -112,16 +112,12 @@ class TaskService {
             .leftJoinAndSelect("task.history", "history")
             .leftJoinAndSelect("history.performed_by", "historyUser");
 
-        console.log("query");
         // Apply Role-based Access Control
         this.applyRBAC(query, user);
-        console.log("query2");
         // Apply Filters
         this.applyFilters(query, filters, user);
-        console.log("query3");
         // Apply Sorting
         this.applySorting(query, filters);
-        console.log("query4");
         return query.getMany();
     }
 
@@ -165,43 +161,77 @@ class TaskService {
         user: User
     ) {
         if (filters.taskType) {
-            query.andWhere("task.task_type = :taskType", {
-                taskType: filters.taskType,
-            });
+            this.applyTaskTypeFilter(query, filters.taskType, user);
         }
+
         if (filters.assignedBy) {
             query.andWhere("creator.id = :assignedBy", {
                 assignedBy: filters.assignedBy,
             });
         }
+
         if (filters.assignedTo) {
             query.andWhere("assignee.id = :assignedTo", {
                 assignedTo: filters.assignedTo,
             });
         }
+
         if (filters.teamOwner) {
-            const teamOwnerIds = await this.getTeamOwnerIds(user);
-            query.andWhere("task.assigneeId IN (:...teamOwnerIds)", {
-                teamOwnerIds,
-            });
+            const teamMemberIds = await this.getTeamOwnerIds(user);
+            if (teamMemberIds.length > 0) {
+                query.andWhere("task.assigneeId IN (:...teamMemberIds)", {
+                    teamMemberIds,
+                });
+            }
         }
+
         if (filters.dueDatePassed) {
             query.andWhere("task.due_date < :now", { now: new Date() });
         }
+
         if (filters.brandName) {
             query.andWhere("brand.brand_name LIKE :brandName", {
                 brandName: `%${filters.brandName}%`,
             });
         }
+
         if (filters.inventoryName) {
             query.andWhere("inventory.name LIKE :inventoryName", {
                 inventoryName: `%${filters.inventoryName}%`,
             });
         }
+
         if (filters.eventName) {
             query.andWhere("event.name LIKE :eventName", {
                 eventName: `%${filters.eventName}%`,
             });
+        }
+    }
+
+    private async applyTaskTypeFilter(
+        query: SelectQueryBuilder<Task>,
+        taskType: string,
+        user: User
+    ) {
+        switch (taskType) {
+            case "your":
+                query.andWhere("task.assigneeId = :userId", {
+                    userId: user.id,
+                });
+                break;
+            case "team":
+                const teamMemberIds = await this.getTeamOwnerIds(user);
+                if (teamMemberIds.length > 0) {
+                    query.andWhere("task.assigneeId IN (:...teamMemberIds)", {
+                        teamMemberIds,
+                    });
+                }
+                break;
+            case "delegated":
+                query.andWhere("task.creatorId = :userId", { userId: user.id });
+                break;
+            default:
+                break;
         }
     }
 
@@ -215,8 +245,10 @@ class TaskService {
     }
 
     private async getTeamOwnerIds(user: User): Promise<string[]> {
-        // TODO: Implement multilevel TO visibility logic
-        // For simplicity, returning team members' IDs
+        // Ensure children is an array before mapping
+        if (!user.children || user.children.length === 0) {
+            return []; // Return an empty array if no children are found
+        }
         return user.children.map((child) => child.id);
     }
 
@@ -432,6 +464,17 @@ class TaskService {
         }
 
         return comment;
+    }
+
+    // Get task History
+    async getTaskHistory(taskId: string): Promise<TaskHistory[]> {
+        const historyRepo = AppDataSource.getRepository(TaskHistory);
+        const history = await historyRepo.find({
+            where: { task: { id: taskId } },
+            relations: ["performed_by"],
+            order: { timestamp: "ASC" },
+        });
+        return history;
     }
 }
 

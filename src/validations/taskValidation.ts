@@ -40,7 +40,10 @@ export const getTasksSchema = z.object({
     assignedBy: z.string().optional(),
     assignedTo: z.string().optional(),
     teamOwner: z.string().optional(),
-    dueDatePassed: z.boolean().optional(),
+    dueDatePassed: z
+        .string()
+        .optional()
+        .transform((val) => (val === "1" ? true : false)), // Cast from "1" or "0" to boolean
     brandName: z.string().optional(),
     inventoryName: z.string().optional(),
     eventName: z.string().optional(),

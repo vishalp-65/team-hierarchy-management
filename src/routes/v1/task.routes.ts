@@ -5,6 +5,7 @@ import {
     createTask,
     deleteTask,
     editTask,
+    getTaskHistory,
     getTasks,
     updateTaskStatus,
 } from "../../controllers/task.controller";
@@ -29,5 +30,8 @@ router.delete("/:taskId", checkTaskPermissions, deleteTask);
 
 // Add comment to a task
 router.post("/:taskId/comments", checkTaskPermissions, addComment);
+
+// Route to get Task History
+router.get("/:taskId/history", checkTaskPermissions, getTaskHistory);
 
 export default router;

@@ -6,6 +6,7 @@ import brandRoutes from "./brand.routes";
 import teamRoutes from "./team.routes";
 import userRoutes from "./user.routes";
 import tasksRoutes from "./task.routes";
+import analyticsRoutes from "./analytics.routes";
 
 const router = Router();
 
@@ -27,5 +28,8 @@ router.use(
     authorizeRoles(["ADMIN", "MG", "TO", "PO", "BO"]),
     tasksRoutes
 );
+
+// Analytics routes
+router.use("/analytics", authorizeRoles(["ADMIN", "MG"]), analyticsRoutes);
 
 export default router;

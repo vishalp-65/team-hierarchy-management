@@ -439,6 +439,7 @@ class TaskService {
         // Handle file upload
         if (file) {
             comment.file_path = file.path; // Store the file path
+            comment.file_type = file.mimetype;
         }
 
         await this.commentRepo.save(comment);

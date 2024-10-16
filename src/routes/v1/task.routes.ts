@@ -11,11 +11,27 @@ import {
 } from "../../controllers/task.controller";
 import { checkTaskPermissions } from "../../middlewares/auth.middleware";
 import multer from "multer";
+import { allowedFileTypes, storage } from "../../utils/fileUpload";
+
+// File filter to validate file type
+const fileFilter = (req, file, cb) => {
+    if (allowedFileTypes.includes(file.mimetype)) {
+        cb(null, true);
+    } else {
+        cb(new Error("Unsupported file type"), false); // Reject unsupported file types
+    }
+};
+
+// Multer instance
+const upload = multer({
+    storage: storage,
+    fileFilter: fileFilter,
+    limits: {
+        fileSize: 1024 * 1024 * 5, // Set file size limit to 5MB
+    },
+});
 
 const router = Router();
-
-// Multer configuration for file upload
-const upload = multer({ dest: "uploads/" });
 
 // Create a new task
 router.post("/", createTask);

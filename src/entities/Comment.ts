@@ -17,8 +17,11 @@ export class Comment {
     @Column({ type: "text" })
     content: string;
 
-    @Column({ type: "text", nullable: true }) // File path is optional
-    file_path: string;
+    @Column({ nullable: true })
+    file_path: string; // Store the path to the file
+
+    @Column({ nullable: true })
+    file_type: string; // Store the file type (e.g., image/jpeg)
 
     @ManyToOne(() => Task, (task) => task.comments, {
         onDelete: "CASCADE",

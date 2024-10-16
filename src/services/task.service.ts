@@ -5,6 +5,7 @@ import { Brand } from "../entities/Brand";
 import { Inventory } from "../entities/Inventory";
 import { TaskHistory } from "../entities/TaskHistory";
 import { ApiError } from "../utils/ApiError";
+import multer from "multer";
 import httpStatus from "http-status";
 import AppDataSource from "../data-source";
 import { NotificationServiceInstance } from "./notification.service";
@@ -419,7 +420,8 @@ class TaskService {
     async addComment(
         taskId: string,
         content: string,
-        user: User
+        user: User,
+        file?: Express.Multer.File
     ): Promise<Comment> {
         const task = await this.taskRepo.findOne({
             where: { id: taskId },
@@ -433,6 +435,11 @@ class TaskService {
         comment.content = content;
         comment.task = task;
         comment.author = user;
+
+        // Handle file upload
+        if (file) {
+            comment.file_path = file.path; // Store the file path
+        }
 
         await this.commentRepo.save(comment);
 

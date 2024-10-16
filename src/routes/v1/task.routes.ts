@@ -10,8 +10,12 @@ import {
     updateTaskStatus,
 } from "../../controllers/task.controller";
 import { checkTaskPermissions } from "../../middlewares/auth.middleware";
+import multer from "multer";
 
 const router = Router();
+
+// Multer configuration for file upload
+const upload = multer({ dest: "uploads/" });
 
 // Create a new task
 router.post("/", createTask);
@@ -29,7 +33,12 @@ router.patch("/:taskId/status", checkTaskPermissions, updateTaskStatus);
 router.delete("/:taskId", checkTaskPermissions, deleteTask);
 
 // Add comment to a task
-router.post("/:taskId/comments", checkTaskPermissions, addComment);
+router.post(
+    "/:taskId/comments",
+    upload.single("file"),
+    checkTaskPermissions,
+    addComment
+);
 
 // Route to get Task History
 router.get("/:taskId/history", checkTaskPermissions, getTaskHistory);

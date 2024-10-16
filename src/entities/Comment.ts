@@ -17,6 +17,9 @@ export class Comment {
     @Column({ type: "text" })
     content: string;
 
+    @Column({ type: "text", nullable: true }) // File path is optional
+    file_path: string;
+
     @ManyToOne(() => Task, (task) => task.comments, {
         onDelete: "CASCADE",
     })

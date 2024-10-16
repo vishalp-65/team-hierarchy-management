@@ -86,7 +86,8 @@ export const addComment = catchAsync(
         const comment = await TaskServiceInstance.addComment(
             taskId,
             validatedData.data?.content,
-            req.user
+            req.user,
+            req.file
         );
         res.status(httpStatus.CREATED).json({ success: true, comment });
     }

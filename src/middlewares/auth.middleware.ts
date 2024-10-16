@@ -10,28 +10,6 @@ export interface IGetUserAuthInfoRequest extends Request {
     user: User; // or any other type
 }
 
-// Middleware to check if user is admin
-export const checkAdmin = catchAsync(
-    async (req: IGetUserAuthInfoRequest, res: Response, next: NextFunction) => {
-        const userId = req.user?.id; // Assuming userId is set by authentication middleware
-        const userRepo = AppDataSource.getRepository(User);
-
-        const user = await userRepo.findOne({
-            where: { id: userId },
-            relations: ["roles"],
-        });
-
-        if (!user || !user.roles.some((role) => role.role_name === "ADMIN")) {
-            throw new ApiError(
-                httpStatus.FORBIDDEN,
-                "Access denied, Admins only"
-            );
-        }
-
-        next();
-    }
-);
-
 export const authorizeRoles = (roles: string[]) => {
     return (
         req: IGetUserAuthInfoRequest,

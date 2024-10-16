@@ -1,30 +1,40 @@
 import { ApiError } from "../utils/ApiError";
 import httpStatus from "http-status";
-import { In } from "typeorm";
+import { In, Repository } from "typeorm";
 import AppDataSource from "../data-source";
 import { User } from "../entities/User";
 import { Team } from "../entities/Team";
 import { Role } from "../entities/Role";
 import { Brand } from "../entities/Brand";
-import { teamService } from "./team.service";
 import { ContactPerson } from "../entities/ContactPerson";
 import { brandTypes, usersTypes } from "../types/types";
 
 class AdminService {
+    private userRepo: Repository<User>;
+    private brandRepo: Repository<Brand>;
+    private contactPersonRepo: Repository<ContactPerson>;
+    private teamRepo: Repository<Team>;
+    private roleRepo: Repository<Role>;
+
+    constructor() {
+        this.userRepo = AppDataSource.getRepository(User);
+        this.brandRepo = AppDataSource.getRepository(Brand);
+        this.contactPersonRepo = AppDataSource.getRepository(ContactPerson);
+        this.teamRepo = AppDataSource.getRepository(Team);
+        this.roleRepo = AppDataSource.getRepository(Role);
+    }
     // Create a new user
     async createUser(userData: usersTypes) {
-        const userRepo = AppDataSource.getRepository(User);
-        const teamRepo = AppDataSource.getRepository(Team);
-        const roleRepo = AppDataSource.getRepository(Role);
-
         // Check if user already exists
-        const userExists = await userRepo.findOneBy({ email: userData.email });
+        const userExists = await this.userRepo.findOneBy({
+            email: userData.email,
+        });
         if (userExists) {
             throw new ApiError(httpStatus.BAD_REQUEST, "User already exists");
         }
 
         // Fetch Role entities based on role names
-        const roles = await roleRepo.find({
+        const roles = await this.roleRepo.find({
             where: { role_name: In(userData.roles!) },
         });
 
@@ -41,14 +51,14 @@ class AdminService {
         // Fetch manager if provided
         let manager = null;
         if (userData.managerId) {
-            manager = await userRepo.findOneBy({ id: userData.managerId });
+            manager = await this.userRepo.findOneBy({ id: userData.managerId });
             if (!manager) {
                 throw new ApiError(httpStatus.BAD_REQUEST, "Manager not found");
             }
         }
 
         // Create the user
-        const user = userRepo.create({
+        const user = this.userRepo.create({
             user_name: userData.user_name,
             password: userData.password, // TODO: Hash the password before saving
             phone_number: userData.phone_number,
@@ -57,7 +67,7 @@ class AdminService {
             manager: manager, // Assign manager here
         });
 
-        await userRepo.save(user);
+        await this.userRepo.save(user);
 
         // Create a team if user is a Team Owner (TO)
         if (hasTO) {
@@ -72,14 +82,14 @@ class AdminService {
                 );
             }
             // Automatically create a team if user has the "TO" role
-            const team = teamRepo.create({
+            const team = this.teamRepo.create({
                 teamOwner: user,
             });
-            await teamRepo.save(team);
+            await this.teamRepo.save(team);
 
             // Assign the team to the user
             user.team = team;
-            await userRepo.save(user);
+            await this.userRepo.save(user);
         }
 
         return user;
@@ -87,11 +97,7 @@ class AdminService {
 
     // Update an existing user
     async updateUser(userId: string, userData: usersTypes) {
-        const userRepo = AppDataSource.getRepository(User);
-        const roleRepo = AppDataSource.getRepository(Role);
-        const teamRepo = AppDataSource.getRepository(Team);
-
-        const user = await userRepo.findOne({
+        const user = await this.userRepo.findOne({
             where: { id: userId },
             relations: ["roles", "team", "manager"],
         });
@@ -101,7 +107,7 @@ class AdminService {
         }
 
         if (userData.roles) {
-            const roles = await roleRepo.find({
+            const roles = await this.roleRepo.find({
                 where: {
                     role_name: In(userData.roles),
                 },
@@ -121,7 +127,7 @@ class AdminService {
 
         // Check if user manager is being updated
         if (userData.managerId && user.manager?.id !== userData.managerId) {
-            const manager = await userRepo.findOneBy({
+            const manager = await this.userRepo.findOneBy({
                 id: userData.managerId,
             });
             if (!manager) {
@@ -151,17 +157,17 @@ class AdminService {
             email: userData.email || user.email,
         });
 
-        await userRepo.save(user);
+        await this.userRepo.save(user);
 
         if (userData.roles && userData.roles.includes("TO")) {
             // If the user doesn't have a team, create one
             if (!user.team) {
-                const team = teamRepo.create({
+                const team = this.teamRepo.create({
                     teamOwner: user,
                 });
-                await teamRepo.save(team);
+                await this.teamRepo.save(team);
                 user.team = team;
-                await userRepo.save(user);
+                await this.userRepo.save(user);
             }
         }
 
@@ -170,10 +176,6 @@ class AdminService {
 
     // Create a new brand
     async createBrand(brandData: brandTypes) {
-        const brandRepo = AppDataSource.getRepository(Brand);
-        const userRepo = AppDataSource.getRepository(User);
-        const contactPersonRepo = AppDataSource.getRepository(ContactPerson);
-
         if (!brandData.ownerIds) {
             throw new ApiError(
                 httpStatus.BAD_REQUEST,
@@ -182,27 +184,27 @@ class AdminService {
         }
 
         // Fetch Brand Owners using findBy (In for multiple ids)
-        const owners = await userRepo.find({
+        const owners = await this.userRepo.find({
             where: {
                 id: In(brandData.ownerIds),
             },
         });
 
-        const brand = brandRepo.create({
+        const brand = this.brandRepo.create({
             brand_name: brandData.brand_name,
             revenue: brandData.revenue,
             deal_closed_value: brandData.deal_closed_value,
             owners: owners,
         });
 
-        await brandRepo.save(brand);
+        await this.brandRepo.save(brand);
         // Add new contact persons
         if (
             brandData.contact_person_name &&
             brandData.contact_person_phone &&
             brandData.contact_person_email
         ) {
-            const contactPersonEntities = contactPersonRepo.create({
+            const contactPersonEntities = this.contactPersonRepo.create({
                 contact_person_name: brandData.contact_person_name,
                 contact_person_phone: brandData.contact_person_phone,
                 contact_person_email: brandData.contact_person_email,
@@ -210,11 +212,11 @@ class AdminService {
             });
 
             // Save all contact persons
-            await contactPersonRepo.save(contactPersonEntities);
+            await this.contactPersonRepo.save(contactPersonEntities);
         }
 
         // Return the brand with updated contact persons
-        const updatedBrand = await brandRepo.findOne({
+        const updatedBrand = await this.brandRepo.findOne({
             where: { id: brand.id },
             relations: ["owners", "contactPersons"],
         });
@@ -224,10 +226,7 @@ class AdminService {
 
     // Update an existing brand
     async updateBrand(brandId: string, brandData: brandTypes) {
-        const brandRepo = AppDataSource.getRepository(Brand);
-        const userRepo = AppDataSource.getRepository(User);
-
-        const brand = await brandRepo.findOne({
+        const brand = await this.brandRepo.findOne({
             where: { id: brandId },
         });
 
@@ -245,41 +244,36 @@ class AdminService {
 
         // Update owners
         if (brandData.ownerIds) {
-            const owners = await userRepo.find({
+            const owners = await this.userRepo.find({
                 where: { id: In(brandData.ownerIds) },
             });
             brand.owners = owners;
         }
 
-        await brandRepo.save(brand);
+        await this.brandRepo.save(brand);
         return brand;
     }
 
     // Assign roles to a user
     async assignRoleToUser(userId: string, roleIds: number[]) {
-        const userRepo = AppDataSource.getRepository(User);
-        const roleRepo = AppDataSource.getRepository(Role);
-
-        const user = await userRepo.findOne({
+        const user = await this.userRepo.findOne({
             where: { id: userId },
             relations: ["roles"],
         });
         if (!user) throw new ApiError(httpStatus.NOT_FOUND, "User not found");
 
-        const roles = await roleRepo.find({
+        const roles = await this.roleRepo.find({
             where: { id: In(roleIds) },
         });
         user.roles = roles;
-        await userRepo.save(user);
+        await this.userRepo.save(user);
         return user;
     }
 
     // List all TOs (Team Owners) above a user in the hierarchy
     async listUsersWithTOHierarchy(userId?: string) {
-        const userRepo = AppDataSource.getRepository(User);
-
         // Fetch the user along with their manager and roles
-        const user = await userRepo.findOne({
+        const user = await this.userRepo.findOne({
             where: { id: userId },
             relations: ["manager", "roles"],
         });
@@ -293,7 +287,7 @@ class AdminService {
 
         // Traverse upwards in the hierarchy iteratively
         while (currentUser?.manager) {
-            const manager = await userRepo.findOne({
+            const manager = await this.userRepo.findOne({
                 where: { id: currentUser.manager.id },
                 relations: ["manager", "roles"],
             });
@@ -324,10 +318,8 @@ class AdminService {
     ): Promise<boolean> {
         if (!managerId) return false; // If no managerId provided, no cycle is possible
 
-        const userRepo = AppDataSource.getRepository(User);
-
         // Start with the current manager
-        let currentManager = await userRepo.findOne({
+        let currentManager = await this.userRepo.findOne({
             where: { id: managerId },
             relations: ["manager"], // Load the user's manager
         });

@@ -74,7 +74,7 @@ export const deleteTask = catchAsync(
     async (req: IGetUserAuthInfoRequest, res: Response) => {
         const { taskId } = req.params;
         await TaskServiceInstance.deleteTask(taskId, req.user);
-        res.status(httpStatus.OK).json({ success: true });
+        res.status(httpStatus.NO_CONTENT).json({ success: true });
     }
 );
 

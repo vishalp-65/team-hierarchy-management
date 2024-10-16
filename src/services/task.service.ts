@@ -10,22 +10,34 @@ import AppDataSource from "../data-source";
 import { NotificationServiceInstance } from "./notification.service";
 import { Event } from "../entities/Event";
 import { TaskTypes } from "../types/types";
-import { SelectQueryBuilder } from "typeorm";
+import { Repository, SelectQueryBuilder } from "typeorm";
 import { Comment } from "../entities/Comment";
 import { Notification } from "../entities/Notification";
 
 class TaskService {
+    private notificationRepo: Repository<Notification>;
+    private taskRepo: Repository<Task>;
+    private userRepo: Repository<User>;
+    private brandRepo: Repository<Brand>;
+    private eventRepo: Repository<Event>;
+    private historyRepo: Repository<TaskHistory>;
+    private inventoryRepo: Repository<Inventory>;
+    private commentRepo: Repository<Comment>;
+
+    constructor() {
+        this.userRepo = AppDataSource.getRepository(User);
+        this.taskRepo = AppDataSource.getRepository(Task);
+        this.brandRepo = AppDataSource.getRepository(Brand);
+        this.eventRepo = AppDataSource.getRepository(Event);
+        this.inventoryRepo = AppDataSource.getRepository(Inventory);
+        this.historyRepo = AppDataSource.getRepository(TaskHistory);
+        this.notificationRepo = AppDataSource.getRepository(Notification);
+        this.commentRepo = AppDataSource.getRepository(Comment);
+    }
     // Create a new task
     async createTask(data: TaskTypes, creator: User): Promise<Task> {
-        const taskRepo = AppDataSource.getRepository(Task);
-        const userRepo = AppDataSource.getRepository(User);
-        const brandRepo = AppDataSource.getRepository(Brand);
-        const eventRepo = AppDataSource.getRepository(Event);
-        const inventoryRepo = AppDataSource.getRepository(Inventory);
-        const historyRepo = AppDataSource.getRepository(TaskHistory);
-
         // Fetch assignee
-        const assignee = await userRepo.findOne({
+        const assignee = await this.userRepo.findOne({
             where: { id: data.assigneeId },
         });
         if (!assignee) {
@@ -44,7 +56,7 @@ class TaskService {
         // Assign related entity based on task_type
         switch (data.task_type) {
             case "brand":
-                const brand = await brandRepo.findOne({
+                const brand = await this.brandRepo.findOne({
                     where: { id: data.brandId },
                 });
                 if (!brand)
@@ -53,7 +65,7 @@ class TaskService {
                 break;
             case "event":
                 // Ensure to retrieve the full event entity
-                const event = await eventRepo.findOne({
+                const event = await this.eventRepo.findOne({
                     where: { id: data.eventId },
                     relations: ["tasks"],
                 });
@@ -62,7 +74,7 @@ class TaskService {
                 task.event = event; // Full event entity is now assigned here
                 break;
             case "inventory":
-                const inventory = await inventoryRepo.findOne({
+                const inventory = await this.inventoryRepo.findOne({
                     where: { id: data.inventoryId },
                 });
                 if (!inventory)
@@ -77,14 +89,14 @@ class TaskService {
         }
 
         // Save Task
-        await taskRepo.save(task);
+        await this.taskRepo.save(task);
 
         // Log Task Creation in History
         const history = new TaskHistory();
         history.task = task;
         history.action = "Task Created";
         history.performed_by = creator;
-        await historyRepo.save(history);
+        await this.historyRepo.save(history);
 
         // Send Notification to Assignee
         await NotificationServiceInstance.sendTaskNotification(
@@ -98,9 +110,7 @@ class TaskService {
 
     // Get all task with filter and sorting functionality
     async getTasks(user: User, filters: any): Promise<Task[]> {
-        const taskRepo = AppDataSource.getRepository(Task);
-
-        const query = taskRepo
+        const query = this.taskRepo
             .createQueryBuilder("task")
             .leftJoinAndSelect("task.creator", "creator")
             .leftJoinAndSelect("task.assignee", "assignee")
@@ -257,10 +267,7 @@ class TaskService {
         status: string,
         user: User
     ): Promise<Task> {
-        const taskRepo = AppDataSource.getRepository(Task);
-        const historyRepo = AppDataSource.getRepository(TaskHistory);
-
-        const task = await taskRepo.findOne({
+        const task = await this.taskRepo.findOne({
             where: { id: taskId },
             relations: ["creator", "assignee"],
         });
@@ -277,14 +284,14 @@ class TaskService {
         }
 
         task.status = status;
-        await taskRepo.save(task);
+        await this.taskRepo.save(task);
 
         // Log in history
         const history = new TaskHistory();
         history.task = task;
         history.action = `Status changed to ${status}`;
         history.performed_by = user;
-        await historyRepo.save(history);
+        await this.historyRepo.save(history);
 
         return task;
     }
@@ -295,11 +302,8 @@ class TaskService {
         data: Partial<TaskTypes>,
         user: User
     ): Promise<Task> {
-        const taskRepo = AppDataSource.getRepository(Task);
-        const historyRepo = AppDataSource.getRepository(TaskHistory);
-
         // Find task with creator and assignee
-        const task = await taskRepo.findOne({
+        const task = await this.taskRepo.findOne({
             where: { id: taskId },
             relations: ["creator", "assignee"],
         });
@@ -336,7 +340,7 @@ class TaskService {
         }
 
         // Save the updated task
-        await taskRepo.save(task);
+        await this.taskRepo.save(task);
 
         // Log the changes in history
         const history = new TaskHistory();
@@ -344,7 +348,7 @@ class TaskService {
         history.action = "Task updated";
         history.performed_by = user;
         history.action = this.getChangedFields(data, task); // Helper function to log changes
-        await historyRepo.save(history);
+        await this.historyRepo.save(history);
 
         return task;
     }
@@ -366,13 +370,8 @@ class TaskService {
 
     // Delete task
     async deleteTask(taskId: string, user: User): Promise<void> {
-        const taskRepo = AppDataSource.getRepository(Task);
-        const historyRepo = AppDataSource.getRepository(TaskHistory);
-        const commentRepo = AppDataSource.getRepository(Comment);
-        const notificationRepo = AppDataSource.getRepository(Notification);
-
         // Find the task with relations
-        const task = await taskRepo.findOne({
+        const task = await this.taskRepo.findOne({
             where: { id: taskId },
             relations: ["creator", "assignee", "comments", "history"],
         });
@@ -390,28 +389,28 @@ class TaskService {
         }
 
         // Delete related notifications
-        await notificationRepo
+        await this.notificationRepo
             .createQueryBuilder()
             .delete()
             .where("taskId = :taskId", { taskId: task.id })
             .execute();
 
         // Delete related comments
-        await commentRepo
+        await this.commentRepo
             .createQueryBuilder()
             .delete()
             .where("taskId = :taskId", { taskId: task.id })
             .execute();
 
         // Delete related task history
-        await historyRepo
+        await this.historyRepo
             .createQueryBuilder()
             .delete()
             .where("taskId = :taskId", { taskId: task.id })
             .execute();
 
         // Delete the task itself
-        await taskRepo.delete(task.id);
+        await this.taskRepo.delete(task.id);
 
         return;
     }
@@ -422,11 +421,7 @@ class TaskService {
         content: string,
         user: User
     ): Promise<Comment> {
-        const taskRepo = AppDataSource.getRepository(Task);
-        const commentRepo = AppDataSource.getRepository(Comment);
-        const historyRepo = AppDataSource.getRepository(TaskHistory);
-
-        const task = await taskRepo.findOne({
+        const task = await this.taskRepo.findOne({
             where: { id: taskId },
             relations: ["creator", "assignee"],
         });
@@ -439,14 +434,14 @@ class TaskService {
         comment.task = task;
         comment.author = user;
 
-        await commentRepo.save(comment);
+        await this.commentRepo.save(comment);
 
         // Log in history
         const history = new TaskHistory();
         history.task = task;
         history.action = "Comment Added";
         history.performed_by = user;
-        await historyRepo.save(history);
+        await this.historyRepo.save(history);
 
         // Notify relevant users
         await NotificationServiceInstance.sendTaskNotification(
@@ -468,8 +463,7 @@ class TaskService {
 
     // Get task History
     async getTaskHistory(taskId: string): Promise<TaskHistory[]> {
-        const historyRepo = AppDataSource.getRepository(TaskHistory);
-        const history = await historyRepo.find({
+        const history = await this.historyRepo.find({
             where: { task: { id: taskId } },
             relations: ["performed_by"],
             order: { timestamp: "ASC" },

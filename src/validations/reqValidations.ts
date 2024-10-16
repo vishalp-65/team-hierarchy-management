@@ -35,3 +35,20 @@ export const contactSchema = z.object({
     contact_person_phone: z.string().min(10, "Contact number is required"),
     contact_person_email: z.string().email("Valid email is required"),
 });
+
+export const paginationSchema = z.object({
+    page: z
+        .number()
+        .optional()
+        .default(1)
+        .refine((n) => n > 0, {
+            message: "Page must be greater than 0",
+        }),
+    limit: z
+        .number()
+        .optional()
+        .default(10)
+        .refine((n) => n > 0, {
+            message: "Limit must be greater than 0",
+        }),
+});

@@ -32,6 +32,8 @@ class SLAService {
                 task,
                 `Task "${task.title}" is nearing its due date.`
             );
+
+            // Here we can also add mailing notification as well
         }
 
         // Overdue tasks
@@ -56,7 +58,10 @@ class SLAService {
                     task.creator
                 );
             } catch (error) {
-                console.log("Unable to change status", error);
+                console.log(
+                    `Unable to change status of ${task.title} task`,
+                    error
+                );
             }
 
             // Send notifications
@@ -65,6 +70,13 @@ class SLAService {
                 task,
                 `Task "${task.title}" is now overdue.`
             );
+            await NotificationServiceInstance.sendTaskNotification(
+                task.assignee,
+                task,
+                `Task "${task.title}" is now overdue.`
+            );
+
+            // Here we can also add mailing notification as well
         }
     }
 }

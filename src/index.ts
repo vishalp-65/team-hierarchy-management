@@ -31,7 +31,7 @@ app.use(swaggerRoutes);
 
 // 404 handler for unknown API requests
 app.use((req, res, next) => {
-    next(new ApiError(httpStatus.NOT_FOUND, "Not found"));
+    next(new ApiError(httpStatus.NOT_FOUND, "Route not found"));
 });
 
 // Error handler middleware

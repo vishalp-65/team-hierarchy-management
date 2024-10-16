@@ -7,6 +7,7 @@ import teamRoutes from "./team.routes";
 import userRoutes from "./user.routes";
 import tasksRoutes from "./task.routes";
 import analyticsRoutes from "./analytics.routes";
+import notificationRoutes from "./notification.routes";
 
 const router = Router();
 
@@ -31,5 +32,8 @@ router.use(
 
 // Analytics routes
 router.use("/analytics", authorizeRoles(["ADMIN", "MG"]), analyticsRoutes);
+
+// Notification routes
+router.use("/notification", notificationRoutes);
 
 export default router;

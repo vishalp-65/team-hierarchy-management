@@ -31,7 +31,7 @@
  *         in: path
  *         required: true
  *         schema:
- *           type: number
+ *           type: uuid
  *     requestBody:
  *       required: true
  *       content:
@@ -77,7 +77,7 @@
  *         in: path
  *         required: true
  *         schema:
- *           type: number
+ *           type: uuid
  *     requestBody:
  *       required: true
  *       content:
@@ -109,7 +109,7 @@
  *               - roleIds
  *             properties:
  *               userId:
- *                 type: number
+ *                 type: uuid
  *               roleIds:
  *                 type: array
  *                 items:
@@ -134,7 +134,7 @@
  *         in: path
  *         required: true
  *         schema:
- *           type: number
+ *           type: uuid
  *         description: ID of the user to retrieve
  *     responses:
  *       201:

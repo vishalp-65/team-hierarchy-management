@@ -31,7 +31,7 @@
  *       - in: path
  *         name: brandId
  *         schema:
- *           type: string
+ *           type: uuid
  *         required: true
  *         description: ID of the brand to retrieve
  *     responses:

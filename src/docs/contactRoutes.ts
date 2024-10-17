@@ -31,7 +31,7 @@
  *         in: path
  *         required: true
  *         schema:
- *           type: number
+ *           type: uuid
  *     requestBody:
  *       required: true
  *       content:

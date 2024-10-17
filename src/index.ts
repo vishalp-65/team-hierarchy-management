@@ -8,7 +8,7 @@ import httpStatus from "http-status";
 import errorHandler from "./middlewares/errorHandler";
 import apiRoutes from "./routes/index";
 import AppDataSource from "./data-source";
-import { deleteSchema, seedRoles } from "./seeds/roles.seed";
+import { seedRoles } from "./seeds/roles.seed";
 import swaggerRoutes from "./config/swagger";
 import cron from "node-cron";
 import { SLAServiceInstance } from "./services/sla.service";

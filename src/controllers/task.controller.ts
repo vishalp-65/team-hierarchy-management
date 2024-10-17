@@ -10,6 +10,21 @@ import { IGetUserAuthInfoRequest } from "../middlewares/auth.middleware";
 export const createTask = catchAsync(
     async (req: IGetUserAuthInfoRequest, res: Response) => {
         const validatedData = TaskValidationInstance.createTask(req.body);
+        if (
+            (validatedData?.data?.inventoryId &&
+                validatedData?.data?.eventId) ||
+            (validatedData?.data.eventId && validatedData?.data?.brandId) ||
+            (validatedData?.data?.brandId &&
+                validatedData?.data?.inventoryId) ||
+            (validatedData?.data?.eventId &&
+                validatedData?.data?.inventoryId &&
+                validatedData?.data?.brandId)
+        ) {
+            res.status(httpStatus.BAD_REQUEST).json({
+                success: false,
+                message: "Only one task type is allowed",
+            });
+        }
         const task = await TaskServiceInstance.createTask(
             validatedData.data,
             req.user

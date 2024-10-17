@@ -21,7 +21,7 @@ export class TaskHistory {
     @JoinColumn({ name: "taskId" }) // Explicitly define the foreign key
     task: Task;
 
-    @Column({ length: 50 })
+    @Column()
     action: string; // e.g., 'created', 'assigned', 'status_changed', 'comment_added'
 
     @ManyToOne(() => User)

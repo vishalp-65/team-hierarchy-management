@@ -33,6 +33,7 @@ export const editTaskSchema = z.object({
             message: "Due date must be in the future",
         })
         .transform((val) => new Date(val)),
+    assigneeId: z.string().optional(),
 });
 
 export const getTasksSchema = z.object({

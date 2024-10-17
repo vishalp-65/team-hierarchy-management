@@ -5,7 +5,6 @@ import { Brand } from "../entities/Brand";
 import { Inventory } from "../entities/Inventory";
 import { TaskHistory } from "../entities/TaskHistory";
 import { ApiError } from "../utils/ApiError";
-import multer from "multer";
 import httpStatus from "http-status";
 import AppDataSource from "../data-source";
 import { NotificationServiceInstance } from "./notification.service";
@@ -93,11 +92,7 @@ class TaskService {
         await this.taskRepo.save(task);
 
         // Log Task Creation in History
-        const history = new TaskHistory();
-        history.task = task;
-        history.action = "Task Created";
-        history.performed_by = creator;
-        await this.historyRepo.save(history);
+        await this.logTaskHistory(task, creator, "Task Created");
 
         // Send Notification to Assignee
         await NotificationServiceInstance.sendTaskNotification(
@@ -284,25 +279,39 @@ class TaskService {
             );
         }
 
+        if (
+            status === "open" &&
+            task.status === "completed" &&
+            task.creator.id === user.id
+        ) {
+            const notificationService = NotificationServiceInstance;
+
+            notificationService.sendTaskNotification(
+                task.assignee,
+                task,
+                `${task.title} was marked as incomplete and reopened by ${task?.creator?.user_name}`
+            );
+        }
+
         task.status = status;
         await this.taskRepo.save(task);
 
         // Log in history
-        const history = new TaskHistory();
-        history.task = task;
-        history.action = `Status changed to ${status}`;
-        history.performed_by = user;
-        await this.historyRepo.save(history);
+        await this.logTaskHistory(task, user, `Status changed to ${status}`);
 
         return task;
     }
 
-    // Edit task (title, description, due_date)
+    // Edit task (title, description, due_date and assignee)
     async editTask(
         taskId: string,
         data: Partial<TaskTypes>,
         user: User
     ): Promise<Task> {
+        // Flag to track if assignee has changed
+        let assigneeChanged = false;
+        let oldAssignee = null;
+
         // Find task with creator and assignee
         const task = await this.taskRepo.findOne({
             where: { id: taskId },
@@ -339,17 +348,65 @@ class TaskService {
         if (data.due_date && new Date(data.due_date) !== task.due_date) {
             task.due_date = new Date(data.due_date);
         }
+        // Check and update assignee
+        if (
+            data.assigneeId &&
+            data.assigneeId !== task.assignee.id &&
+            task.creator.id === user.id
+        ) {
+            const newAssignee = await this.userRepo.findOne({
+                where: { id: data.assigneeId },
+            });
+
+            if (!newAssignee) {
+                throw new ApiError(
+                    httpStatus.NOT_FOUND,
+                    "New assignee not found"
+                );
+            }
+
+            // Save old assignee for notification later
+            oldAssignee = task.assignee;
+            task.assignee = newAssignee;
+            assigneeChanged = true; // Mark that the assignee was changed
+        }
 
         // Save the updated task
         await this.taskRepo.save(task);
 
+        const actions = this.getChangedFields(data, task); // Helper function to log changes
+
+        // Sending notification to new assignee and oldAssignee
+        if (assigneeChanged && oldAssignee) {
+            const notificationService = NotificationServiceInstance;
+
+            // Notify the old assignee
+            await notificationService.sendTaskNotification(
+                oldAssignee,
+                task,
+                `You have been unassigned from the task ${task.title} by ${user.user_name}.`
+            );
+
+            // Notify the new assignee
+            await notificationService.sendTaskNotification(
+                task.assignee,
+                task,
+                `You have been assigned to the task ${task.title} by ${user.user_name}, Check now.`
+            );
+
+            // Log the changes in history
+            await this.logTaskHistory(
+                task,
+                user,
+                `Task Updated : ${actions}`,
+                `Assignee changed ${oldAssignee?.user_name} to ${task.assignee.user_name}`
+            );
+
+            return task;
+        }
+
         // Log the changes in history
-        const history = new TaskHistory();
-        history.task = task;
-        history.action = "Task updated";
-        history.performed_by = user;
-        history.action = this.getChangedFields(data, task); // Helper function to log changes
-        await this.historyRepo.save(history);
+        await this.logTaskHistory(task, user, `Task Updated : ${actions}`);
 
         return task;
     }
@@ -358,13 +415,13 @@ class TaskService {
     private getChangedFields(newData: Partial<TaskTypes>, task: Task): string {
         const changes: string[] = [];
         if (newData.title && newData.title !== task.title) {
-            changes.push("title");
+            changes.push("title changed");
         }
         if (newData.description && newData.description !== task.description) {
-            changes.push("description");
+            changes.push("description changed");
         }
         if (newData.due_date && new Date(newData.due_date) !== task.due_date) {
-            changes.push("due_date");
+            changes.push("due_date changed");
         }
         return changes.join(", ");
     }
@@ -388,6 +445,15 @@ class TaskService {
                 "Only the task creator can delete the task"
             );
         }
+
+        const notificationService = NotificationServiceInstance;
+
+        // Sending notification to assignee
+        await notificationService.sendTaskNotification(
+            task.assignee,
+            task,
+            `The task ${task.title} has been permanently deleted by ${user.user_name}`
+        );
 
         // Delete related notifications
         await this.notificationRepo
@@ -445,11 +511,7 @@ class TaskService {
         await this.commentRepo.save(comment);
 
         // Log in history
-        const history = new TaskHistory();
-        history.task = task;
-        history.action = "Comment Added";
-        history.performed_by = user;
-        await this.historyRepo.save(history);
+        await this.logTaskHistory(task, user, "Comment Added");
 
         // Notify relevant users
         await NotificationServiceInstance.sendTaskNotification(
@@ -474,9 +536,30 @@ class TaskService {
         const history = await this.historyRepo.find({
             where: { task: { id: taskId } },
             relations: ["performed_by"],
-            order: { timestamp: "ASC" },
+            order: { timestamp: "DESC" },
         });
         return history;
+    }
+
+    // Log task history and track changes
+    private async logTaskHistory(
+        task: Task,
+        user: User,
+        action: string,
+        additionalDetails?: string
+    ): Promise<void> {
+        const history = new TaskHistory();
+        history.task = task;
+        history.performed_by = user;
+        history.action = action;
+
+        // If additional details are provided, append them to the action
+        if (additionalDetails) {
+            history.action += `, ${additionalDetails}`;
+        }
+
+        // Save the history record
+        await this.historyRepo.save(history);
     }
 }
 

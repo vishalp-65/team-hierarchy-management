@@ -51,7 +51,7 @@ router.delete("/:taskId", checkTaskPermissions, deleteTask);
 // Add comment to a task
 router.post(
     "/:taskId/comments",
-    upload.single("file"),
+    upload.array("file"),
     checkTaskPermissions,
     addComment
 );

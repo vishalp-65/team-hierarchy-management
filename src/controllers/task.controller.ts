@@ -5,26 +5,14 @@ import catchAsync from "../utils/catchAsync";
 import httpStatus from "http-status";
 import { TaskValidationInstance } from "../validations/taskValidation";
 import { IGetUserAuthInfoRequest } from "../middlewares/auth.middleware";
+import { handleValidationErrors } from "../utils/errorHandler";
 
 // Create a new task
 export const createTask = catchAsync(
     async (req: IGetUserAuthInfoRequest, res: Response) => {
-        const validatedData = TaskValidationInstance.createTask(req.body);
-        if (
-            (validatedData?.data?.inventoryId &&
-                validatedData?.data?.eventId) ||
-            (validatedData?.data.eventId && validatedData?.data?.brandId) ||
-            (validatedData?.data?.brandId &&
-                validatedData?.data?.inventoryId) ||
-            (validatedData?.data?.eventId &&
-                validatedData?.data?.inventoryId &&
-                validatedData?.data?.brandId)
-        ) {
-            res.status(httpStatus.BAD_REQUEST).json({
-                success: false,
-                message: "Only one task type is allowed",
-            });
-        }
+        const validatedData = handleValidationErrors(
+            TaskValidationInstance.createTask(req.body)
+        );
         const task = await TaskServiceInstance.createTask(
             validatedData.data,
             req.user
@@ -36,7 +24,9 @@ export const createTask = catchAsync(
 // Get tasks with filters
 export const getTasks = catchAsync(
     async (req: IGetUserAuthInfoRequest, res: Response) => {
-        const filters = TaskValidationInstance.getTasks(req.query);
+        const filters = handleValidationErrors(
+            TaskValidationInstance.getTasks(req.query)
+        );
         const tasks = await TaskServiceInstance.getTasks(
             req.user,
             filters.data
@@ -49,7 +39,10 @@ export const getTasks = catchAsync(
 export const updateTaskStatus = catchAsync(
     async (req: IGetUserAuthInfoRequest, res: Response) => {
         const { taskId } = req.params;
-        const validatedData = TaskValidationInstance.updateTaskStatus(req.body);
+        const validatedData = handleValidationErrors(
+            TaskValidationInstance.updateTaskStatus(req.body)
+        );
+
         const updatedTask = await TaskServiceInstance.updateTaskStatus(
             taskId,
             validatedData.data?.status,
@@ -63,18 +56,10 @@ export const updateTaskStatus = catchAsync(
 export const editTask = catchAsync(
     async (req: IGetUserAuthInfoRequest, res: Response) => {
         const { taskId } = req.params;
-        const validatedData = TaskValidationInstance.editTask(req.body);
+        const validatedData = handleValidationErrors(
+            TaskValidationInstance.editTask(req.body)
+        );
 
-        if (
-            !validatedData?.data?.description &&
-            !validatedData?.data?.due_date &&
-            !validatedData?.data?.title
-        ) {
-            res.status(httpStatus.BAD_REQUEST).json({
-                success: false,
-                message: "Fields are empty",
-            });
-        }
         const updatedTask = await TaskServiceInstance.editTask(
             taskId,
             validatedData.data,
@@ -97,7 +82,10 @@ export const deleteTask = catchAsync(
 export const addComment = catchAsync(
     async (req: IGetUserAuthInfoRequest, res: Response) => {
         const { taskId } = req.params;
-        const validatedData = TaskValidationInstance.addComment(req.body);
+        const validatedData = handleValidationErrors(
+            TaskValidationInstance.addComment(req.body)
+        );
+
         const comment = await TaskServiceInstance.addComment(
             taskId,
             validatedData.data?.content,

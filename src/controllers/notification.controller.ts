@@ -4,6 +4,7 @@ import httpStatus from "http-status";
 import { IGetUserAuthInfoRequest } from "../middlewares/auth.middleware";
 import { z } from "zod";
 import { paginationSchema } from "../validations/reqValidations";
+import { handleValidationErrors } from "../utils/errorHandler";
 
 // Fetch notifications
 export async function getUserNotifications(
@@ -11,14 +12,9 @@ export async function getUserNotifications(
     res: Response
 ) {
     // Validate and parse options with Zod
-    const parsedOptions = paginationSchema.safeParse(req.params);
-
-    if (!parsedOptions.success) {
-        const error = parsedOptions.error.errors
-            .map((e) => e.message)
-            .join(", ");
-        res.status(httpStatus.BAD_REQUEST).json({ success: false, error });
-    }
+    const parsedOptions = handleValidationErrors(
+        paginationSchema.safeParse(req.params)
+    );
 
     const { page, limit } = parsedOptions.data;
 

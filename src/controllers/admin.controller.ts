@@ -7,44 +7,58 @@ import {
     brandSchema,
     userSchema,
 } from "../validations/reqValidations";
+import { handleValidationErrors } from "../utils/errorHandler";
 
 // Create a new user
 export const createUser = catchAsync(async (req: Request, res: Response) => {
-    const validatedData = userSchema.parse(req.body);
-    const user = await adminService.createUser(validatedData);
+    const validatedData = handleValidationErrors(
+        userSchema.safeParse(req.body)
+    );
+
+    const user = await adminService.createUser(validatedData?.data);
     res.status(httpStatus.CREATED).json({ success: true, user });
 });
 
 // Update an existing user
 export const updateUser = catchAsync(async (req: Request, res: Response) => {
     const userId = req.params.id;
-    const validatedData = userSchema.partial().parse(req.body);
-    const user = await adminService.updateUser(userId, validatedData);
+    const validatedData = handleValidationErrors(
+        userSchema.partial().safeParse(req.body)
+    );
+    const user = await adminService.updateUser(userId, validatedData?.data);
     res.status(httpStatus.OK).json({ success: true, user });
 });
 
 // Create a new brand
 export const createBrand = catchAsync(async (req: Request, res: Response) => {
-    const validatedData = brandSchema.parse(req.body);
-    const brand = await adminService.createBrand(validatedData);
+    const validatedData = handleValidationErrors(
+        brandSchema.safeParse(req.body)
+    );
+    const brand = await adminService.createBrand(validatedData?.data);
     res.status(httpStatus.CREATED).json({ success: true, brand });
 });
 
 // Update an existing brand
 export const updateBrand = catchAsync(async (req: Request, res: Response) => {
     const brandId = req.params.id;
-    const validatedData = brandSchema.partial().parse(req.body);
-    const brand = await adminService.updateBrand(brandId, validatedData);
+    const validatedData = handleValidationErrors(
+        brandSchema.partial().safeParse(req.body)
+    );
+
+    const brand = await adminService.updateBrand(brandId, validatedData?.data);
     res.status(httpStatus.OK).json({ success: true, brand });
 });
 
 // Assign roles to a user
 export const assignRoleToUser = catchAsync(
     async (req: Request, res: Response) => {
-        const validatedData = assignRoleSchema.parse(req.body);
+        const validatedData = handleValidationErrors(
+            assignRoleSchema.safeParse(req.body)
+        );
+
         const user = await adminService.assignRoleToUser(
-            validatedData.userId,
-            validatedData.roleIds
+            validatedData?.data?.userId,
+            validatedData?.data?.roleIds
         );
         res.status(httpStatus.OK).json({ success: true, user });
     }

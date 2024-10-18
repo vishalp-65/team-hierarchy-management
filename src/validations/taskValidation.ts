@@ -1,41 +1,61 @@
-// src/validations/task.validation.ts
 import { z } from "zod";
 
-export const createTaskSchema = z.object({
-    title: z.string().min(1, "Title is required"),
-    description: z.string().optional(),
-    task_type: z.enum(["general", "brand", "event", "inventory"]),
-    due_date: z
-        .string({ required_error: "Due date is required" })
-        .refine((val) => !isNaN(Date.parse(val)), {
-            message: "Invalid date format",
-        })
-        .refine((val) => new Date(val) > new Date(), {
-            message: "Due date must be in the future",
-        })
-        .transform((val) => new Date(val)),
-    assigneeId: z.string().min(1, "AssigneeId is required"),
-    brandId: z.string().optional(),
-    eventId: z.string().optional(),
-    inventoryId: z.string().optional(),
-});
+// Reusable date validation schema
+const futureDate = z
+    .string({ required_error: "Due date is required" })
+    .refine((val) => !isNaN(Date.parse(val)), {
+        message: "Invalid date format",
+    })
+    .refine((val) => new Date(val) > new Date(), {
+        message: "Due date must be in the future",
+    })
+    .transform((val) => new Date(val));
 
-export const editTaskSchema = z.object({
-    title: z.string().optional(),
-    description: z.string().optional(),
-    due_date: z
-        .string()
-        .optional()
-        .refine((val) => !isNaN(Date.parse(val)), {
-            message: "Invalid date format",
-        })
-        .refine((val) => new Date(val) > new Date(), {
-            message: "Due date must be in the future",
-        })
-        .transform((val) => new Date(val)),
-    assigneeId: z.string().optional(),
-});
+// Enum for task types
+const taskTypeEnum = z.enum(["general", "brand", "event", "inventory"]);
 
+// Task validation schemas
+export const createTaskSchema = z
+    .object({
+        title: z.string().min(1, "Title is required"),
+        description: z.string().optional(),
+        task_type: taskTypeEnum,
+        due_date: futureDate, // Reuse the futureDate validation
+        assigneeId: z.string().min(1, "AssigneeId is required"),
+        brandId: z.string().optional(),
+        eventId: z.string().optional(),
+        inventoryId: z.string().optional(),
+        // Ensure only one of brandId, eventId, or inventoryId is provided
+    })
+    .refine(
+        (data) =>
+            [data.brandId, data.eventId, data.inventoryId].filter(Boolean)
+                .length <= 1,
+        {
+            message: "Only one of brandId, eventId, or inventoryId is allowed.",
+            path: ["taskType"], // Point to a relevant path in error
+        }
+    );
+
+// Edit task schema
+export const editTaskSchema = z
+    .object({
+        title: z.string().optional(),
+        description: z.string().optional(),
+        due_date: futureDate.optional(), // Optional futureDate
+        assigneeId: z.string().optional(),
+    })
+    .refine(
+        (data) =>
+            [data.description, data.due_date, data.title].filter(Boolean)
+                .length === 0,
+        {
+            message: "All fields are empty",
+            path: ["title"],
+        }
+    );
+
+// Get tasks schema
 export const getTasksSchema = z.object({
     taskType: z.enum(["all", "your", "team", "delegated"]).optional(),
     assignedBy: z.string().optional(),
@@ -44,7 +64,7 @@ export const getTasksSchema = z.object({
     dueDatePassed: z
         .string()
         .optional()
-        .transform((val) => (val === "1" ? true : false)), // Cast from "1" or "0" to boolean
+        .transform((val) => (val === "1" ? true : false)), // Cast "1" or "0" to boolean
     brandName: z.string().optional(),
     inventoryName: z.string().optional(),
     eventName: z.string().optional(),
@@ -52,14 +72,17 @@ export const getTasksSchema = z.object({
     order: z.enum(["asc", "desc"]).optional(),
 });
 
+// Update task status schema
 export const updateTaskStatusSchema = z.object({
     status: z.enum(["open", "in-progress", "completed", "overdue"]),
 });
 
+// Add comment schema
 export const addCommentSchema = z.object({
     content: z.string().min(1, "Comment content is required"),
 });
 
+// Validation class
 class TaskValidation {
     createTask(data: any) {
         return createTaskSchema.safeParse(data);
@@ -72,6 +95,7 @@ class TaskValidation {
     getTasks(data: any) {
         return getTasksSchema.safeParse(data);
     }
+
     updateTaskStatus(data: any) {
         return updateTaskStatusSchema.safeParse(data);
     }

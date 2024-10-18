@@ -1,14 +1,12 @@
-// jest.config.ts
-export default {
+import type { Config } from "jest";
+
+const config: Config = {
     preset: "ts-jest",
     testEnvironment: "node",
-    verbose: true,
-    moduleFileExtensions: ["ts", "js", "json", "node"],
+    coverageDirectory: "./coverage",
+    coverageReporters: ["json", "lcov", "text", "clover"],
+    collectCoverageFrom: ["src/**/*.ts"],
     testMatch: ["**/tests/**/*.test.ts"],
-    globals: {
-        "ts-jest": {
-            tsconfig: "./tsconfig.json",
-        },
-    },
-    setupFilesAfterEnv: ["./src/tests/setup.ts"],
 };
+
+export default config;

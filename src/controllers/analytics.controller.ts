@@ -23,7 +23,10 @@ export const getTaskAnalytics = catchAsync(
 
         const parsed = timeframeSchema.safeParse(timeframe);
         if (!parsed.success) {
-            throw new ApiError(httpStatus.BAD_REQUEST, "Invalid timeframe");
+            res.status(httpStatus.BAD_REQUEST).json({
+                success: false,
+                message: "Invalid timeframe",
+            });
         }
 
         const analytics = await AnalyticsServiceInstance.getTaskAnalytics(

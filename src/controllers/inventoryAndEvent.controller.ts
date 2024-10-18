@@ -7,16 +7,14 @@ import {
     eventSchema,
     inventorySchema,
 } from "../validations/inventoryAndEvent.validation";
+import { handleValidationErrors } from "../utils/errorHandler";
 
 export const createInventory = catchAsync(
     async (req: Request, res: Response) => {
-        const validatedData = inventorySchema.safeParse(req.body);
-        if (!validatedData.success) {
-            const error = validatedData.error.errors
-                .map((e) => e.message)
-                .join(", ");
-            res.status(httpStatus.BAD_REQUEST).json({ success: false, error });
-        }
+        const validatedData = handleValidationErrors(
+            inventorySchema.safeParse(req.body)
+        );
+
         const inventory = await InventoryAndEventInstance.createInventory(
             validatedData?.data
         );
@@ -37,13 +35,10 @@ export const updateInventory = catchAsync(
                 message: "ID not found",
             });
         }
-        const validatedData = inventorySchema.safeParse(req.body);
-        if (!validatedData.success) {
-            const error = validatedData.error.errors
-                .map((e) => e.message)
-                .join(", ");
-            res.status(httpStatus.BAD_REQUEST).json({ success: false, error });
-        }
+        const validatedData = handleValidationErrors(
+            inventorySchema.safeParse(req.body)
+        );
+
         const inventory = await InventoryAndEventInstance.updateInventory(
             id,
             validatedData?.data
@@ -95,13 +90,10 @@ export const getInventories = catchAsync(
 );
 
 export const createEvent = catchAsync(async (req: Request, res: Response) => {
-    const validatedData = eventSchema.safeParse(req.body);
-    if (!validatedData.success) {
-        const error = validatedData.error.errors
-            .map((e) => e.message)
-            .join(", ");
-        res.status(httpStatus.BAD_REQUEST).json({ success: false, error });
-    }
+    const validatedData = handleValidationErrors(
+        eventSchema.safeParse(req.body)
+    );
+
     const event = await InventoryAndEventInstance.createEvent(
         validatedData?.data
     );
@@ -121,13 +113,10 @@ export const updateEvent = catchAsync(async (req: Request, res: Response) => {
         });
     }
 
-    const validatedData = eventSchema.safeParse(req.body);
-    if (!validatedData.success) {
-        const error = validatedData.error.errors
-            .map((e) => e.message)
-            .join(", ");
-        res.status(httpStatus.BAD_REQUEST).json({ success: false, error });
-    }
+    const validatedData = handleValidationErrors(
+        eventSchema.safeParse(req.body)
+    );
+
     const event = await InventoryAndEventInstance.updateEvent(
         id,
         validatedData?.data

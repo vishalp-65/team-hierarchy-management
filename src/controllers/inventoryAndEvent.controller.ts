@@ -8,6 +8,7 @@ import {
     inventorySchema,
 } from "../validations/inventoryAndEvent.validation";
 import { handleValidationErrors } from "../utils/errorHandler";
+import sendResponse from "../utils/responseHandler";
 
 export const createInventory = catchAsync(
     async (req: Request, res: Response) => {
@@ -18,11 +19,13 @@ export const createInventory = catchAsync(
         const inventory = await InventoryAndEventInstance.createInventory(
             validatedData?.data
         );
-        res.status(httpStatus.CREATED).json({
-            success: true,
-            message: "Inventory created",
-            inventory,
-        });
+        sendResponse(
+            res,
+            httpStatus.CREATED,
+            true,
+            "Inventory created",
+            inventory
+        );
     }
 );
 
@@ -30,10 +33,7 @@ export const updateInventory = catchAsync(
     async (req: Request, res: Response) => {
         const { id } = req.params;
         if (!id) {
-            res.status(httpStatus.BAD_REQUEST).json({
-                success: false,
-                message: "ID not found",
-            });
+            sendResponse(res, httpStatus.BAD_REQUEST, false, "ID not found");
         }
         const validatedData = handleValidationErrors(
             inventorySchema.safeParse(req.body)
@@ -43,11 +43,7 @@ export const updateInventory = catchAsync(
             id,
             validatedData?.data
         );
-        res.status(httpStatus.OK).json({
-            success: true,
-            message: "Inventory updated",
-            inventory,
-        });
+        sendResponse(res, httpStatus.OK, true, "Inventory updated", inventory);
     }
 );
 
@@ -55,16 +51,11 @@ export const deleteInventory = catchAsync(
     async (req: Request, res: Response) => {
         const { id } = req.params;
         if (!id) {
-            res.status(httpStatus.BAD_REQUEST).json({
-                success: false,
-                message: "ID not found",
-            });
+            sendResponse(res, httpStatus.BAD_REQUEST, false, "ID not found");
         }
         await InventoryAndEventInstance.deleteInventory(id);
-        res.status(httpStatus.OK).json({
-            success: true,
-            message: "Inventory deleted",
-        });
+
+        sendResponse(res, httpStatus.OK, true, "Inventory deleted");
     }
 );
 
@@ -72,20 +63,23 @@ export const getInventoryById = catchAsync(
     async (req: Request, res: Response) => {
         const { id } = req.params;
         if (!id) {
-            res.status(httpStatus.BAD_REQUEST).json({
-                success: false,
-                message: "ID not found",
-            });
+            sendResponse(res, httpStatus.BAD_REQUEST, false, "ID not found");
         }
         const inventory = await InventoryAndEventInstance.getInventoryById(id);
-        res.status(httpStatus.OK).json({ success: true, inventory });
+        sendResponse(
+            res,
+            httpStatus.OK,
+            true,
+            "Filtered inventories",
+            inventory
+        );
     }
 );
 
 export const getInventories = catchAsync(
     async (req: Request, res: Response) => {
         const inventories = await InventoryAndEventInstance.getInventories();
-        res.status(httpStatus.OK).json({ success: true, inventories });
+        sendResponse(res, httpStatus.OK, true, "All inventories", inventories);
     }
 );
 
@@ -97,20 +91,13 @@ export const createEvent = catchAsync(async (req: Request, res: Response) => {
     const event = await InventoryAndEventInstance.createEvent(
         validatedData?.data
     );
-    res.status(httpStatus.CREATED).json({
-        success: true,
-        message: "Event created",
-        event,
-    });
+    sendResponse(res, httpStatus.CREATED, true, "Event created", event);
 });
 
 export const updateEvent = catchAsync(async (req: Request, res: Response) => {
     const { id } = req.params;
     if (!id) {
-        res.status(httpStatus.BAD_REQUEST).json({
-            success: false,
-            message: "ID not found",
-        });
+        sendResponse(res, httpStatus.BAD_REQUEST, false, "ID not found");
     }
 
     const validatedData = handleValidationErrors(
@@ -121,38 +108,28 @@ export const updateEvent = catchAsync(async (req: Request, res: Response) => {
         id,
         validatedData?.data
     );
-    res.status(httpStatus.OK).json({
-        success: true,
-        message: "Event updated",
-        event,
-    });
+    sendResponse(res, httpStatus.OK, true, "Event Updated", event);
 });
 
 export const deleteEvent = catchAsync(async (req: Request, res: Response) => {
     const { id } = req.params;
     if (!id) {
-        res.status(httpStatus.BAD_REQUEST).json({
-            success: false,
-            message: "ID not found",
-        });
+        sendResponse(res, httpStatus.BAD_REQUEST, false, "ID not found");
     }
     await InventoryAndEventInstance.deleteEvent(id);
-    res.status(httpStatus.OK).json({ success: true, message: "Event deleted" });
+    sendResponse(res, httpStatus.OK, true, "Event deleted");
 });
 
 export const getEventById = catchAsync(async (req: Request, res: Response) => {
     const { id } = req.params;
     if (!id) {
-        res.status(httpStatus.BAD_REQUEST).json({
-            success: false,
-            message: "ID not found",
-        });
+        sendResponse(res, httpStatus.BAD_REQUEST, false, "ID not found");
     }
     const event = await InventoryAndEventInstance.getEventById(id);
-    res.status(httpStatus.OK).json({ success: true, event });
+    sendResponse(res, httpStatus.OK, true, "Filtered events");
 });
 
 export const getEvents = catchAsync(async (req: Request, res: Response) => {
     const events = await InventoryAndEventInstance.getEvents();
-    res.status(httpStatus.OK).json({ success: true, events });
+    sendResponse(res, httpStatus.OK, true, "All events");
 });

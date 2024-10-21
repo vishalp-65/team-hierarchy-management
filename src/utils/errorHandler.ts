@@ -9,9 +9,10 @@ import { ApiError } from "./ApiError";
 export const handleValidationErrors = (result: any) => {
     if (!result.success) {
         const errorMessages = result.error.errors
-            .map((e: any) => e.message)
-            .join(", ");
+            .map((err: any) => `${err.path.join(".")} ${err.message}`)
+            .join(", "); // Join all error messages with a comma
+
         throw new ApiError(httpStatus.BAD_REQUEST, errorMessages);
     }
-    return result.data;
+    return result;
 };

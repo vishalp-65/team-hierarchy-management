@@ -6,6 +6,7 @@ import httpStatus from "http-status";
 import { TaskValidationInstance } from "../validations/taskValidation";
 import { IGetUserAuthInfoRequest } from "../middlewares/auth.middleware";
 import { handleValidationErrors } from "../utils/errorHandler";
+import sendResponse from "../utils/responseHandler";
 
 // Create a new task
 export const createTask = catchAsync(
@@ -17,7 +18,7 @@ export const createTask = catchAsync(
             validatedData.data,
             req.user
         );
-        res.status(httpStatus.CREATED).json({ success: true, task });
+        sendResponse(res, httpStatus.CREATED, true, "Task created", task);
     }
 );
 
@@ -31,7 +32,7 @@ export const getTasks = catchAsync(
             req.user,
             filters.data
         );
-        res.status(httpStatus.OK).json({ success: true, tasks });
+        sendResponse(res, httpStatus.OK, true, "All tasks", tasks);
     }
 );
 
@@ -48,7 +49,13 @@ export const updateTaskStatus = catchAsync(
             validatedData.data?.status,
             req.user
         );
-        res.status(httpStatus.OK).json({ success: true, task: updatedTask });
+        sendResponse(
+            res,
+            httpStatus.OK,
+            true,
+            "Task status updated",
+            updatedTask
+        );
     }
 );
 
@@ -60,12 +67,13 @@ export const editTask = catchAsync(
             TaskValidationInstance.editTask(req.body)
         );
 
+        console.log("task data", validatedData.data);
         const updatedTask = await TaskServiceInstance.editTask(
             taskId,
             validatedData.data,
             req.user
         );
-        res.status(httpStatus.OK).json({ success: true, task: updatedTask });
+        sendResponse(res, httpStatus.OK, true, "Task updated", updatedTask);
     }
 );
 
@@ -74,7 +82,7 @@ export const deleteTask = catchAsync(
     async (req: IGetUserAuthInfoRequest, res: Response) => {
         const { taskId } = req.params;
         await TaskServiceInstance.deleteTask(taskId, req.user);
-        res.status(httpStatus.NO_CONTENT).json({ success: true });
+        sendResponse(res, httpStatus.NO_CONTENT, true, "Task deleted");
     }
 );
 
@@ -92,7 +100,13 @@ export const addComment = catchAsync(
             req.user,
             req.file
         );
-        res.status(httpStatus.CREATED).json({ success: true, comment });
+        sendResponse(
+            res,
+            httpStatus.CREATED,
+            true,
+            "Comment added to task",
+            comment
+        );
     }
 );
 
@@ -101,6 +115,6 @@ export const getTaskHistory = catchAsync(
     async (req: IGetUserAuthInfoRequest, res: Response) => {
         const { taskId } = req.params;
         const history = await TaskServiceInstance.getTaskHistory(taskId);
-        res.status(httpStatus.OK).json({ success: true, history });
+        sendResponse(res, httpStatus.OK, true, "Task history", history);
     }
 );

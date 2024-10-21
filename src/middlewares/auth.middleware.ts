@@ -36,9 +36,10 @@ export const authentication = catchAsync(
         const header = req.headers["authorization"];
 
         if (!header) {
-            return res
-                .status(httpStatus.UNAUTHORIZED)
-                .json({ error: "Authorization header missing" });
+            return res.status(httpStatus.UNAUTHORIZED).json({
+                success: false,
+                message: "Authorization header missing",
+            });
         }
 
         const token = header.split(" ")[1]; // Assuming the format "Bearer <token>"
@@ -63,7 +64,7 @@ export const authentication = catchAsync(
             if (!user) {
                 return res.status(httpStatus.UNAUTHORIZED).json({
                     success: false,
-                    error: "Logged in User not found",
+                    message: "Logged in User not found",
                 });
             }
 
@@ -97,7 +98,7 @@ export const checkTaskPermissions = async (
     if (!task) {
         return res
             .status(httpStatus.NOT_FOUND)
-            .json({ success: false, error: "Task not found" });
+            .json({ success: false, message: "Task not found" });
     }
 
     const userRoles = user.roles.map((role) => role.role_name);
@@ -128,6 +129,6 @@ export const checkTaskPermissions = async (
 
     return res.status(httpStatus.FORBIDDEN).json({
         success: false,
-        error: "You do not have permission to access this task",
+        message: "You do not have permission to access this task",
     });
 };

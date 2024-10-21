@@ -4,6 +4,7 @@ import catchAsync from "../utils/catchAsync";
 import httpStatus from "http-status";
 import { contactService } from "../services/contact.service";
 import { handleValidationErrors } from "../utils/errorHandler";
+import sendResponse from "../utils/responseHandler";
 
 // Create a new contact for a brand
 export const createContact = catchAsync(async (req: Request, res: Response) => {
@@ -13,11 +14,17 @@ export const createContact = catchAsync(async (req: Request, res: Response) => {
     );
 
     // Create contact and return updated brand details
-    const brand = await contactService.createContact(
+    const contactWithBrand = await contactService.createContact(
         brandId,
         validatedContact?.data
     );
-    return res.status(httpStatus.CREATED).json({ success: true, brand });
+    sendResponse(
+        res,
+        httpStatus.CREATED,
+        true,
+        "Contact created",
+        contactWithBrand
+    );
 });
 
 // Update contact for a brand
@@ -32,5 +39,5 @@ export const updateContact = catchAsync(async (req: Request, res: Response) => {
         brandId,
         validatedContact?.data
     );
-    return res.status(httpStatus.OK).json({ success: true, brand });
+    sendResponse(res, httpStatus.CREATED, true, "Contact updated", brand);
 });

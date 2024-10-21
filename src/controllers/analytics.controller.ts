@@ -4,7 +4,7 @@ import { AnalyticsServiceInstance } from "../services/analytics.service";
 import catchAsync from "../utils/catchAsync";
 import httpStatus from "http-status";
 import { z } from "zod";
-import { ApiError } from "../utils/ApiError";
+import sendResponse from "../utils/responseHandler";
 
 // Get task analytics
 export const getTaskAnalytics = catchAsync(
@@ -23,15 +23,17 @@ export const getTaskAnalytics = catchAsync(
 
         const parsed = timeframeSchema.safeParse(timeframe);
         if (!parsed.success) {
-            res.status(httpStatus.BAD_REQUEST).json({
-                success: false,
-                message: "Invalid timeframe",
-            });
+            sendResponse(
+                res,
+                httpStatus.BAD_REQUEST,
+                false,
+                "Invalid timeframe"
+            );
         }
 
         const analytics = await AnalyticsServiceInstance.getTaskAnalytics(
             parsed.data
         );
-        res.status(httpStatus.OK).json({ success: true, analytics });
+        sendResponse(res, httpStatus.OK, true, "Analytics data", analytics);
     }
 );

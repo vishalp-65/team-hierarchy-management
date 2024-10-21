@@ -8,6 +8,7 @@ import {
     userSchema,
 } from "../validations/reqValidations";
 import { handleValidationErrors } from "../utils/errorHandler";
+import sendResponse from "../utils/responseHandler";
 
 // Create a new user
 export const createUser = catchAsync(async (req: Request, res: Response) => {
@@ -16,7 +17,7 @@ export const createUser = catchAsync(async (req: Request, res: Response) => {
     );
 
     const user = await adminService.createUser(validatedData?.data);
-    res.status(httpStatus.CREATED).json({ success: true, user });
+    sendResponse(res, httpStatus.CREATED, true, "User created", user);
 });
 
 // Update an existing user
@@ -26,7 +27,7 @@ export const updateUser = catchAsync(async (req: Request, res: Response) => {
         userSchema.partial().safeParse(req.body)
     );
     const user = await adminService.updateUser(userId, validatedData?.data);
-    res.status(httpStatus.OK).json({ success: true, user });
+    sendResponse(res, httpStatus.OK, true, "User updated", user);
 });
 
 // Create a new brand
@@ -35,7 +36,7 @@ export const createBrand = catchAsync(async (req: Request, res: Response) => {
         brandSchema.safeParse(req.body)
     );
     const brand = await adminService.createBrand(validatedData?.data);
-    res.status(httpStatus.CREATED).json({ success: true, brand });
+    sendResponse(res, httpStatus.CREATED, true, "Brand created", brand);
 });
 
 // Update an existing brand
@@ -46,7 +47,7 @@ export const updateBrand = catchAsync(async (req: Request, res: Response) => {
     );
 
     const brand = await adminService.updateBrand(brandId, validatedData?.data);
-    res.status(httpStatus.OK).json({ success: true, brand });
+    sendResponse(res, httpStatus.OK, true, "Brand updated", brand);
 });
 
 // Assign roles to a user
@@ -60,7 +61,7 @@ export const assignRoleToUser = catchAsync(
             validatedData?.data?.userId,
             validatedData?.data?.roleIds
         );
-        res.status(httpStatus.OK).json({ success: true, user });
+        sendResponse(res, httpStatus.OK, true, "Role assigned", user);
     }
 );
 
@@ -69,12 +70,14 @@ export const listUsersWithTOHierarchy = catchAsync(
     async (req: Request, res: Response) => {
         const userId = req.params.userId;
         if (!userId) {
-            res.status(httpStatus.BAD_REQUEST).json({
-                success: false,
-                message: "UserId required",
-            });
+            sendResponse(
+                res,
+                httpStatus.BAD_REQUEST,
+                false,
+                "User ID required"
+            );
         }
         const hierarchy = await adminService.listUsersWithTOHierarchy(userId);
-        res.status(httpStatus.OK).json({ success: true, hierarchy });
+        sendResponse(res, httpStatus.OK, true, "User hierarchy", hierarchy);
     }
 );

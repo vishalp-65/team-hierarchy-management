@@ -42,16 +42,17 @@ export const editTaskSchema = z
     .object({
         title: z.string().optional(),
         description: z.string().optional(),
-        due_date: futureDate.optional(), // Optional futureDate
+        due_date: futureDate.optional(),
         assigneeId: z.string().optional(),
     })
     .refine(
         (data) =>
-            [data.description, data.due_date, data.title].filter(Boolean)
-                .length === 0,
+            [data.description, data.due_date, data.title, data.assigneeId].some(
+                Boolean
+            ),
         {
-            message: "All fields are empty",
-            path: ["title"],
+            message: "At least one field must be provided",
+            path: [],
         }
     );
 

@@ -179,7 +179,7 @@ class AdminService {
         if (!brandData.ownerIds) {
             throw new ApiError(
                 httpStatus.BAD_REQUEST,
-                "Brand owner id not found"
+                "Brand ownerId required"
             );
         }
 
@@ -189,6 +189,10 @@ class AdminService {
                 id: In(brandData.ownerIds),
             },
         });
+
+        if (!owners || owners.length === 0) {
+            throw new ApiError(httpStatus.NOT_FOUND, "Brand owner not found");
+        }
 
         const brand = this.brandRepo.create({
             brand_name: brandData.brand_name,

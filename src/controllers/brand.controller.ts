@@ -5,6 +5,7 @@ import catchAsync from "../utils/catchAsync";
 import httpStatus from "http-status";
 import { IGetUserAuthInfoRequest } from "../middlewares/auth.middleware";
 import { handleValidationErrors } from "../utils/errorHandler";
+import sendResponse from "../utils/responseHandler";
 
 export const createBrand = catchAsync(
     async (req: IGetUserAuthInfoRequest, res: Response) => {
@@ -18,7 +19,7 @@ export const createBrand = catchAsync(
             req.user,
             validatedBrand?.data
         );
-        return res.status(httpStatus.OK).json({ success: true, brand });
+        sendResponse(res, httpStatus.CREATED, true, "Brand created", brand);
     }
 );
 
@@ -36,14 +37,14 @@ export const UpdateBrand = catchAsync(
             brandId,
             validatedBrand?.data
         );
-        return res.status(httpStatus.OK).json({ success: true, brand });
+        sendResponse(res, httpStatus.OK, true, "Brand updated", brand);
     }
 );
 
 export const getBrands = catchAsync(
     async (req: IGetUserAuthInfoRequest, res: Response) => {
         const brands = await brandService.getBrandsOwnedByUser(req.user.id);
-        return res.status(httpStatus.OK).json({ success: true, brands });
+        sendResponse(res, httpStatus.OK, true, "All brands", brands);
     }
 );
 
@@ -52,6 +53,6 @@ export const getBrandDetails = catchAsync(
         const brandId = req.params.brandId;
         const userId = req.user.id;
         const result = await brandService.getBrandDetails(userId, brandId);
-        res.status(httpStatus.OK).json({ success: true, result });
+        sendResponse(res, httpStatus.OK, true, "Brand details", result);
     }
 );

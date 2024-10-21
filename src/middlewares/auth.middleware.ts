@@ -71,8 +71,6 @@ export const authentication = catchAsync(
             // Attach the full user object to the request
             req.user = user;
 
-            console.log(req.user); // Verify that `req.user` contains the full user object
-
             next();
         } catch (error) {
             console.error(error);

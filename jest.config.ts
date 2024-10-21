@@ -7,6 +7,7 @@ const config: Config = {
     coverageReporters: ["json", "lcov", "text", "clover"],
     collectCoverageFrom: ["src/**/*.ts"],
     testMatch: ["**/tests/**/*.test.ts"],
+    setupFiles: ["./jest.setup.ts"],
 };
 
 export default config;

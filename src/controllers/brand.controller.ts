@@ -1,5 +1,5 @@
 import { Response } from "express";
-import { brandSchema } from "../validations/reqValidations";
+import { brandSchema, updateBrandSchema } from "../validations/reqValidations";
 import { brandService } from "../services/brand.service";
 import catchAsync from "../utils/catchAsync";
 import httpStatus from "http-status";
@@ -23,12 +23,12 @@ export const createBrand = catchAsync(
     }
 );
 
-export const UpdateBrand = catchAsync(
+export const updateBrand = catchAsync(
     async (req: IGetUserAuthInfoRequest, res: Response) => {
         // Validate the request body
         const brandId = req.params.id;
         const validatedBrand = handleValidationErrors(
-            brandSchema.safeParse(req.body)
+            updateBrandSchema.safeParse(req.body)
         );
 
         // Save or update the brand

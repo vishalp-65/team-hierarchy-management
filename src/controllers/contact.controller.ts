@@ -39,5 +39,5 @@ export const updateContact = catchAsync(async (req: Request, res: Response) => {
         brandId,
         validatedContact?.data
     );
-    sendResponse(res, httpStatus.CREATED, true, "Contact updated", brand);
+    sendResponse(res, httpStatus.OK, true, "Contact updated", brand);
 });

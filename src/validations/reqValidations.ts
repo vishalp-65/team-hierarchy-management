@@ -23,6 +23,48 @@ export const brandSchema = z.object({
     ownerIds: z.array(z.string()).min(1).optional(), // IDs of BOs
 });
 
+export const updateBrandSchema = z
+    .object({
+        brand_name: z.string().optional(),
+        revenue: z
+            .number()
+            .positive("Revenue should be a positive number")
+            .optional(),
+        deal_closed_value: z
+            .number()
+            .positive("Deal value should be a positive number")
+            .optional(),
+        contact_person_name: z
+            .string()
+            .min(1, "Person name is required")
+            .optional(),
+        contact_person_phone: z
+            .string()
+            .min(10, "Contact number is required")
+            .optional(),
+        contact_person_email: z
+            .string()
+            .email("Person email is required")
+            .optional(),
+        ownerIds: z.array(z.string()).min(1).optional(), // IDs of BOs
+    })
+    .refine(
+        (data) =>
+            [
+                data.brand_name,
+                data.revenue,
+                data.deal_closed_value,
+                data.contact_person_email,
+                data.contact_person_name,
+                data.contact_person_phone,
+                data.ownerIds,
+            ].some(Boolean),
+        {
+            message: "At least one field must be provided",
+            path: [],
+        }
+    );
+
 export const assignRoleSchema = z.object({
     userId: z.string().min(1, "User Id is required"),
     roleIds: z

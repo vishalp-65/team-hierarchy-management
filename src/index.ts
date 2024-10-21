@@ -44,17 +44,19 @@ cron.schedule("0 * * * *", async () => {
 });
 
 // Initialize the database and start the server
-AppDataSource.initialize()
-    .then(() => {
-        console.log("Data Source has been initialized!");
-        seedRoles().then(() => {
-            app.listen(config.PORT, () => {
-                console.log(`Server running at ${config.PORT}`);
+if (config.NODE_ENV !== "test") {
+    AppDataSource.initialize()
+        .then(() => {
+            console.log("Data Source has been initialized!");
+            seedRoles().then(() => {
+                app.listen(config.PORT, () => {
+                    console.log(`Server running at ${config.PORT}`);
+                });
             });
+        })
+        .catch((error) => {
+            console.error("Error during Data Source initialization:", error);
         });
-    })
-    .catch((error) => {
-        console.error("Error during Data Source initialization:", error);
-    });
+}
 
 export default app;

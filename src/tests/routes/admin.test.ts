@@ -3,8 +3,8 @@ import { makeRequest } from "../utils/request";
 import {
     generateBrandData,
     generateRandomUserData,
-} from "../utils/generateUserData";
-import { fakeUserIDs } from "../mocks/mockData";
+} from "../utils/generateMockData";
+import { fakeIDs } from "../mocks/mockData";
 
 export let user: any;
 export let brand: any;
@@ -100,7 +100,7 @@ describe("Admin Routes", () => {
         const updatedData = { user_name: "Non-existent User" };
         const res = await makeRequest(
             "put",
-            `/api/v1/admin/user/${fakeUserIDs[0]}`,
+            `/api/v1/admin/user/${fakeIDs[0]}`,
             updatedData
         );
         expect(res.status).toBe(httpStatus.NOT_FOUND);
@@ -122,7 +122,7 @@ describe("Admin Routes", () => {
     });
 
     it("should return error when creating a brand with invalid owner ID", async () => {
-        const invalidBrandData = generateBrandData([fakeUserIDs[0]]);
+        const invalidBrandData = generateBrandData([fakeIDs[0]]);
         const res = await makeRequest(
             "post",
             "/api/v1/admin/brand",
@@ -135,7 +135,7 @@ describe("Admin Routes", () => {
 
     it("should return error when assigning roles to non-existent user", async () => {
         const data = {
-            userId: fakeUserIDs[0],
+            userId: fakeIDs[0],
             roleIds: [3, 4],
         };
         const res = await makeRequest(

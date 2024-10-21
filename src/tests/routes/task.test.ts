@@ -1,6 +1,6 @@
 import httpStatus from "http-status";
 import { makeRequest } from "../utils/request";
-import { generateTaskData } from "../utils/generateUserData";
+import { generateTaskData } from "../utils/generateMockData";
 import { user } from "./admin.test";
 
 let task: any;
@@ -9,7 +9,6 @@ describe("Task Routes", () => {
     it("should create a task successfully", async () => {
         const mockTask = generateTaskData("general", user.id);
         const res = await makeRequest("post", "/api/v1/tasks", mockTask);
-        console.log("task created ", res.body);
         task = res.body?.data;
         expect(res.status).toBe(httpStatus.CREATED);
         expect(res.body.success).toBe(true);
@@ -23,7 +22,6 @@ describe("Task Routes", () => {
             `/api/v1/tasks/${task.id}`,
             updatedTask
         );
-        console.log("task updated ", res.body);
         expect(res.status).toBe(httpStatus.OK);
         expect(res.body.success).toBe(true);
         expect(res.body.message).toBe("Task updated");
@@ -58,7 +56,6 @@ describe("Task Routes", () => {
             `/api/v1/tasks/${task.id}/status`,
             mockStatus
         );
-        console.log("task status ", res.body);
         expect(res.status).toBe(httpStatus.OK);
         expect(res.body.success).toBe(true);
         expect(res.body.message).toBe("Task status updated");
@@ -66,9 +63,6 @@ describe("Task Routes", () => {
 
     it("should delete a task successfully", async () => {
         const res = await makeRequest("delete", `/api/v1/tasks/${task.id}`);
-        console.log("task deleted ", res.body);
         expect(res.status).toBe(httpStatus.NO_CONTENT);
-        expect(res.body.success).toBe(true);
-        expect(res.body.message).toBe("Task deleted");
     });
 });

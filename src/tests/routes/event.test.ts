@@ -34,4 +34,18 @@ describe("Event Routes", () => {
         expect(res.status).toBe(httpStatus.OK);
         expect(res.body.success).toBe(true);
     });
+
+    // Edge cases
+    it("should return event not found", async () => {
+        const res = await makeRequest("get", `/api/v1/event/${event.id}`);
+        expect(res.status).toBe(httpStatus.NOT_FOUND);
+        expect(res.body.success).toBe(false);
+    });
+
+    it("should return invalid fields error while creating event", async () => {
+        const emptyEvent = { name: "sample event" };
+        const res = await makeRequest("post", "/api/v1/event", emptyEvent);
+        expect(res.status).toBe(httpStatus.BAD_REQUEST);
+        expect(res.body.success).toBe(false);
+    });
 });

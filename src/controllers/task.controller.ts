@@ -66,8 +66,6 @@ export const editTask = catchAsync(
         const validatedData = handleValidationErrors(
             TaskValidationInstance.editTask(req.body)
         );
-
-        console.log("task data", validatedData.data);
         const updatedTask = await TaskServiceInstance.editTask(
             taskId,
             validatedData.data,

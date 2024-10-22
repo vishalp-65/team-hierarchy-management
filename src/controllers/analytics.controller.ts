@@ -5,10 +5,11 @@ import catchAsync from "../utils/catchAsync";
 import httpStatus from "http-status";
 import { z } from "zod";
 import sendResponse from "../utils/responseHandler";
+import { IGetUserAuthInfoRequest } from "../middlewares/auth.middleware";
 
 // Get task analytics
 export const getTaskAnalytics = catchAsync(
-    async (req: Request, res: Response) => {
+    async (req: IGetUserAuthInfoRequest, res: Response) => {
         const { timeframe } = req.query;
 
         const timeframeSchema = z.enum([
@@ -32,7 +33,8 @@ export const getTaskAnalytics = catchAsync(
         }
 
         const analytics = await AnalyticsServiceInstance.getTaskAnalytics(
-            parsed.data
+            parsed.data,
+            req.user.id
         );
         sendResponse(res, httpStatus.OK, true, "Analytics data", analytics);
     }

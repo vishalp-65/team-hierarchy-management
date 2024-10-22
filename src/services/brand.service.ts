@@ -5,6 +5,12 @@ import { User } from "../entities/User";
 import { ContactPerson } from "../entities/ContactPerson";
 import { ApiError } from "../utils/ApiError";
 import { brandTypes } from "../types/types";
+import {
+    clearCache,
+    generateCacheKey,
+    getFromCache,
+    setCache,
+} from "../utils/cacheHandler";
 
 class BrandService {
     async createBrand(user: any, brandData: brandTypes) {
@@ -53,6 +59,10 @@ class BrandService {
             relations: ["owners", "contactPersons"],
         });
 
+        // Invalidate cache
+        const cacheKey = generateCacheKey("brand", user.id, {});
+        await clearCache(cacheKey);
+
         return createdBrand;
     }
 
@@ -84,10 +94,21 @@ class BrandService {
             relations: ["owners", "contactPersons"],
         });
 
+        // Invalidate cache
+        const cacheKey = generateCacheKey("brand", brandId, {});
+        await clearCache(cacheKey);
+
         return updatedBrand;
     }
 
     async getBrandsOwnedByUser(userId: string) {
+        // Validate cache
+        const cacheKey = generateCacheKey("brand", userId, {});
+
+        // Check cache
+        let brandCache = await getFromCache<Brand>(cacheKey);
+        if (brandCache) return brandCache;
+
         const brandRepo = AppDataSource.getRepository(Brand);
 
         // Fetch all brands owned by the user, including contact persons
@@ -96,10 +117,20 @@ class BrandService {
             relations: ["owners", "contactPersons"],
         });
 
+        // Cache the result
+        await setCache(cacheKey, brands, 3600); // Cache for 1 hour
+
         return brands;
     }
 
     async getBrandDetails(userId: string, brandId: string) {
+        // Validate cache
+        const cacheKey = generateCacheKey("brand", brandId, {});
+
+        // Check cache
+        let brandCache = await getFromCache<Brand>(cacheKey);
+        if (brandCache) return brandCache;
+
         const userRepo = AppDataSource.getRepository(User);
         const brandRepo = AppDataSource.getRepository(Brand);
 
@@ -136,6 +167,9 @@ class BrandService {
 
         // Check if user is a BO (Brand Owner)
         if (isBO) {
+            // Cache the result
+            await setCache(cacheKey, brand, 3600); // Cache for 1 hour
+
             return brand; // BO gets full access
         }
 
@@ -161,6 +195,9 @@ class BrandService {
                 // Remove contactPersons data if the user is not PO
                 delete brand.contactPersons;
             }
+
+            // Cache the result
+            await setCache(cacheKey, brand, 3600); // Cache for 1 hour
 
             return brand;
         }

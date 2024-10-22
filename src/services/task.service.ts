@@ -13,6 +13,12 @@ import { TaskTypes } from "../types/types";
 import { Repository, SelectQueryBuilder } from "typeorm";
 import { Comment } from "../entities/Comment";
 import { Notification } from "../entities/Notification";
+import {
+    clearCache,
+    generateCacheKey,
+    getFromCache,
+    setCache,
+} from "../utils/cacheHandler";
 
 class TaskService {
     private notificationRepo: Repository<Notification>;
@@ -101,6 +107,10 @@ class TaskService {
             `A new task "${task.title}" has been assigned to you.`
         );
 
+        // Invalidate task list cache for the user
+        const taskListCacheKey = generateCacheKey("tasks", creator.id, {});
+        await clearCache(taskListCacheKey);
+
         return task;
     }
 
@@ -109,6 +119,22 @@ class TaskService {
         filters: any
     ): Promise<{ tasks: Task[]; total: number }> {
         const { page = 1, limit = 10 } = filters;
+
+        // Generate a unique cache key based on user ID and filters
+        const cacheKey = generateCacheKey("tasks", user.id, {
+            ...filters,
+            page,
+            limit,
+        });
+
+        // Check if tasks are in cache
+        const cachedTasks = await getFromCache<{
+            tasks: Task[];
+            total: number;
+        }>(cacheKey);
+        if (cachedTasks) {
+            return cachedTasks; // Return cached result if exists
+        }
 
         const query = this.taskRepo
             .createQueryBuilder("task")
@@ -139,25 +165,42 @@ class TaskService {
 
         const tasks = await query.getMany();
 
-        return { tasks, total };
+        const result = { tasks, total };
+
+        // Cache the result
+        await setCache(cacheKey, result, 3600); // Cache for 1 hour
+
+        return result;
     }
 
     private applyRBAC(query: SelectQueryBuilder<Task>, user: User) {
         const userRoles = user.roles.map((role) => role.role_name);
 
         if (userRoles.includes("ADMIN") || userRoles.includes("MG")) {
-            // Admin and MG can view all tasks
+            // Admin and Management can view all tasks
             return;
         } else if (userRoles.includes("TO")) {
-            // Team Owners can view tasks for their team members
+            // Team Owners can see their team members' tasks
             const teamMemberIds = user.children?.map((child) => child.id) || [];
-            query.andWhere("task.assigneeId IN (:...teamMemberIds)", {
-                teamMemberIds,
-            });
+            // If no team members, avoid IN clause with empty array
+            if (teamMemberIds.length > 0) {
+                query.where("task.assigneeId IN (:...teamMemberIds)", {
+                    teamMemberIds,
+                });
+            } else {
+                // Handle case where TO has no team members
+                query.where("1 = 0"); // No tasks will be selected
+            }
+        } else if (userRoles.includes("PO") || userRoles.includes("BO")) {
+            // Project Owners and Brand Owners can see their own and delegated tasks
+            query.where(
+                "task.assigneeId = :userId OR task.creatorId = :userId",
+                { userId: user.id }
+            );
         } else {
-            // All others can view tasks assigned to or created by them
-            query.andWhere(
-                "(task.assigneeId = :userId OR task.creatorId = :userId)",
+            // Regular users can see their own and delegated tasks
+            query.where(
+                "task.assigneeId = :userId OR task.creatorId = :userId",
                 { userId: user.id }
             );
         }
@@ -294,6 +337,10 @@ class TaskService {
         // Log in history
         await this.logTaskHistory(task, user, `Status changed to ${status}`);
 
+        // Invalidate cache
+        const taskListCacheKey = generateCacheKey("tasks", user.id, {});
+        await clearCache(taskListCacheKey);
+
         return task;
     }
 
@@ -370,6 +417,10 @@ class TaskService {
         await this.taskRepo.save(task);
 
         const actions = this.getChangedFields(data, task); // Helper function to log changes
+
+        // Invalidate cache
+        const taskListCacheKey = generateCacheKey("tasks", user.id, {});
+        await clearCache(taskListCacheKey);
 
         // Sending notification to new assignee and oldAssignee
         if (assigneeChanged && oldAssignee) {
@@ -474,6 +525,10 @@ class TaskService {
         // Delete the task itself
         await this.taskRepo.delete(task.id);
 
+        // Invalidate cache
+        const taskListCacheKey = generateCacheKey("tasks", user.id, {});
+        await clearCache(taskListCacheKey);
+
         return;
     }
 
@@ -523,16 +578,24 @@ class TaskService {
             );
         }
 
+        // Invalidate cache
+        const taskListCacheKey = generateCacheKey("tasks", user.id, {});
+        await clearCache(taskListCacheKey);
+
         return comment;
     }
 
     // Get task History
-    async getTaskHistory(taskId: string): Promise<TaskHistory[]> {
+    async getTaskHistory(taskId: string, user: User): Promise<TaskHistory[]> {
         const history = await this.historyRepo.find({
             where: { task: { id: taskId } },
             relations: ["performed_by"],
             order: { timestamp: "DESC" },
         });
+
+        // Invalidate cache
+        const taskListCacheKey = generateCacheKey("tasks", user.id, {});
+        await clearCache(taskListCacheKey);
         return history;
     }
 

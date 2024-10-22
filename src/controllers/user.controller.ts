@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Response } from "express";
 import { userService } from "../services/user.service";
 import catchAsync from "../utils/catchAsync";
 import httpStatus from "http-status";
@@ -13,9 +13,11 @@ export const listTeammates = catchAsync(
     }
 );
 
-export const searchUser = catchAsync(async (req: Request, res: Response) => {
-    const searchTerm = req.query.q as string;
-    console.log("search term", searchTerm);
-    const users = await userService.searchUser(searchTerm);
-    sendResponse(res, httpStatus.OK, true, "Filtered user", users);
-});
+export const searchUser = catchAsync(
+    async (req: IGetUserAuthInfoRequest, res: Response) => {
+        const searchTerm = req.query.q as string;
+        console.log("search term", searchTerm);
+        const users = await userService.searchUser(searchTerm, req.user.id);
+        sendResponse(res, httpStatus.OK, true, "Filtered user", users);
+    }
+);

@@ -9,15 +9,17 @@ import {
 } from "../validations/inventoryAndEvent.validation";
 import { handleValidationErrors } from "../utils/errorHandler";
 import sendResponse from "../utils/responseHandler";
+import { IGetUserAuthInfoRequest } from "../middlewares/auth.middleware";
 
 export const createInventory = catchAsync(
-    async (req: Request, res: Response) => {
+    async (req: IGetUserAuthInfoRequest, res: Response) => {
         const validatedData = handleValidationErrors(
             inventorySchema.safeParse(req.body)
         );
 
         const inventory = await InventoryAndEventInstance.createInventory(
-            validatedData?.data
+            validatedData?.data,
+            req.user.id
         );
         sendResponse(
             res,
@@ -77,22 +79,27 @@ export const getInventoryById = catchAsync(
 );
 
 export const getInventories = catchAsync(
-    async (req: Request, res: Response) => {
-        const inventories = await InventoryAndEventInstance.getInventories();
+    async (req: IGetUserAuthInfoRequest, res: Response) => {
+        const inventories = await InventoryAndEventInstance.getInventories(
+            req.user.id
+        );
         sendResponse(res, httpStatus.OK, true, "All inventories", inventories);
     }
 );
 
-export const createEvent = catchAsync(async (req: Request, res: Response) => {
-    const validatedData = handleValidationErrors(
-        eventSchema.safeParse(req.body)
-    );
+export const createEvent = catchAsync(
+    async (req: IGetUserAuthInfoRequest, res: Response) => {
+        const validatedData = handleValidationErrors(
+            eventSchema.safeParse(req.body)
+        );
 
-    const event = await InventoryAndEventInstance.createEvent(
-        validatedData?.data
-    );
-    sendResponse(res, httpStatus.CREATED, true, "Event created", event);
-});
+        const event = await InventoryAndEventInstance.createEvent(
+            validatedData?.data,
+            req.user.id
+        );
+        sendResponse(res, httpStatus.CREATED, true, "Event created", event);
+    }
+);
 
 export const updateEvent = catchAsync(async (req: Request, res: Response) => {
     const { id } = req.params;
@@ -129,7 +136,9 @@ export const getEventById = catchAsync(async (req: Request, res: Response) => {
     sendResponse(res, httpStatus.OK, true, "Filtered events");
 });
 
-export const getEvents = catchAsync(async (req: Request, res: Response) => {
-    const events = await InventoryAndEventInstance.getEvents();
-    sendResponse(res, httpStatus.OK, true, "All events");
-});
+export const getEvents = catchAsync(
+    async (req: IGetUserAuthInfoRequest, res: Response) => {
+        const events = await InventoryAndEventInstance.getEvents(req.user.id);
+        sendResponse(res, httpStatus.OK, true, "All events");
+    }
+);

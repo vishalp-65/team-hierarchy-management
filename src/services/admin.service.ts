@@ -8,6 +8,7 @@ import { Role } from "../entities/Role";
 import { Brand } from "../entities/Brand";
 import { ContactPerson } from "../entities/ContactPerson";
 import { brandTypes, usersTypes } from "../types/types";
+import { clearCache, generateCacheKey } from "../utils/cacheHandler";
 
 class AdminService {
     private userRepo: Repository<User>;
@@ -91,6 +92,10 @@ class AdminService {
             user.team = team;
             await this.userRepo.save(user);
         }
+
+        // Invalidate cache
+        const cacheKey = generateCacheKey("users", user.id, {});
+        await clearCache(cacheKey);
 
         return user;
     }

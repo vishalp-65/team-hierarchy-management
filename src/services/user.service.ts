@@ -2,6 +2,11 @@ import AppDataSource from "../data-source";
 import { User } from "../entities/User";
 import { ApiError } from "../utils/ApiError";
 import httpStatus from "http-status";
+import {
+    generateCacheKey,
+    getFromCache,
+    setCache,
+} from "../utils/cacheHandler";
 
 class UserService {
     async listTeammates(userId: string) {
@@ -25,7 +30,14 @@ class UserService {
         return user.team.members;
     }
 
-    async searchUser(searchTerm: string) {
+    async searchUser(searchTerm: string, userId: string) {
+        // Validate cache
+        const cacheKey = generateCacheKey("users", userId, {});
+
+        // Check cache
+        let userCache = await getFromCache<User>(cacheKey);
+        if (userCache) return userCache;
+
         const userRepo = AppDataSource.getRepository(User);
 
         // Search by name, email and phone_number
@@ -41,6 +53,9 @@ class UserService {
                 searchTerm: `%${searchTerm}%`,
             })
             .getMany();
+
+        // Cache the result
+        await setCache(cacheKey, users, 3600); // Cache for 1 hour
 
         return users;
     }

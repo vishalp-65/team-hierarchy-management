@@ -4,9 +4,25 @@ import { ApiError } from "../utils/ApiError";
 import httpStatus from "http-status";
 import AppDataSource from "../data-source";
 import { Between } from "typeorm";
+import {
+    generateCacheKey,
+    getFromCache,
+    setCache,
+} from "../utils/cacheHandler";
 
 class AnalyticsService {
-    async getTaskAnalytics(timeFrame: string): Promise<any> {
+    async getTaskAnalytics(timeFrame: string, userId: string): Promise<any> {
+        // Generate a unique cache key based on user ID and filters
+        const cacheKey = generateCacheKey("analytics", userId, {
+            timeFrame,
+        });
+
+        // Check if tasks are in cache
+        const cachedAnalytics = await getFromCache<any>(cacheKey);
+        if (cachedAnalytics) {
+            return cachedAnalytics; // Return cached result if exists
+        }
+
         const taskRepo = AppDataSource.getRepository(Task);
         const now = new Date();
         let startDate: Date;
@@ -95,6 +111,13 @@ class AnalyticsService {
                         : undefined,
             },
         });
+
+        // Cache the result
+        await setCache(
+            cacheKey,
+            { totalTasksCreated, openTasks, completedTasks, overdueTasks },
+            3600
+        ); // Cache for 1 hour
 
         return {
             totalTasksCreated,

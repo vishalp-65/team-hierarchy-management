@@ -112,7 +112,10 @@ export const addComment = catchAsync(
 export const getTaskHistory = catchAsync(
     async (req: IGetUserAuthInfoRequest, res: Response) => {
         const { taskId } = req.params;
-        const history = await TaskServiceInstance.getTaskHistory(taskId);
+        const history = await TaskServiceInstance.getTaskHistory(
+            taskId,
+            req.user
+        );
         sendResponse(res, httpStatus.OK, true, "Task history", history);
     }
 );

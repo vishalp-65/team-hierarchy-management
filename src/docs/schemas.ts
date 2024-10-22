@@ -17,13 +17,13 @@
  *           type: string
  *         password:
  *           type: string
+ *         phone_number:
+ *           type: string
  *         roles:
  *           type: array
  *           items:
  *             type: string
  *             enum: [ADMIN, PO, BO, TO]
- *         phone_number:
- *           type: string
  *         managerId:
  *           type: number
  *

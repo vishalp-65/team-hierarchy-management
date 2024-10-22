@@ -220,6 +220,18 @@
  *           type: string
  *           enum: [asc, desc]
  *         description: Order the sorted tasks in ascending (asc) or descending (desc) order
+ *       - name: page
+ *         in: query
+ *         required: false
+ *         schema:
+ *           type: number
+ *         description: page number you want
+ *       - name: limit
+ *         in: query
+ *         required: false
+ *         schema:
+ *           type: number
+ *         description: Limit of task per page
  *     responses:
  *       200:
  *         description: Tasks fetched successfully

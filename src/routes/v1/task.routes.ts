@@ -1,5 +1,5 @@
 // src/routes/task.routes.ts
-import { Router } from "express";
+import { Request, Router } from "express";
 import {
     addComment,
     createTask,
@@ -14,7 +14,7 @@ import multer from "multer";
 import { allowedFileTypes, storage } from "../../utils/fileUpload";
 
 // File filter to validate file type
-const fileFilter = (req, file, cb) => {
+const fileFilter = (req: Request, file: any, cb: any) => {
     if (allowedFileTypes.includes(file.mimetype)) {
         cb(null, true);
     } else {

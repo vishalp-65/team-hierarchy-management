@@ -104,8 +104,12 @@ class TaskService {
         return task;
     }
 
-    // Get all task with filter and sorting functionality
-    async getTasks(user: User, filters: any): Promise<Task[]> {
+    async getTasks(
+        user: User,
+        filters: any
+    ): Promise<{ tasks: Task[]; total: number }> {
+        const { page = 1, limit = 10 } = filters;
+
         const query = this.taskRepo
             .createQueryBuilder("task")
             .leftJoinAndSelect("task.creator", "creator")
@@ -118,44 +122,42 @@ class TaskService {
             .leftJoinAndSelect("task.history", "history")
             .leftJoinAndSelect("history.performed_by", "historyUser");
 
-        // Apply Role-based Access Control
+        // Apply Role-based Access Control (RBAC)
         this.applyRBAC(query, user);
-        // Apply Filters
+
+        // Apply filters
         this.applyFilters(query, filters, user);
-        // Apply Sorting
+
+        // Apply sorting
         this.applySorting(query, filters);
-        return query.getMany();
+
+        // Count total before pagination for performance and scalability
+        const total = await query.getCount();
+
+        // Apply pagination (efficient skip and take)
+        query.skip((page - 1) * limit).take(limit);
+
+        const tasks = await query.getMany();
+
+        return { tasks, total };
     }
 
     private applyRBAC(query: SelectQueryBuilder<Task>, user: User) {
         const userRoles = user.roles.map((role) => role.role_name);
 
         if (userRoles.includes("ADMIN") || userRoles.includes("MG")) {
-            // Admin and Management can view all tasks
+            // Admin and MG can view all tasks
             return;
         } else if (userRoles.includes("TO")) {
-            // Team Owners can see their team members' tasks
+            // Team Owners can view tasks for their team members
             const teamMemberIds = user.children?.map((child) => child.id) || [];
-
-            // If no team members, avoid IN clause with empty array
-            if (teamMemberIds.length > 0) {
-                query.where("task.assigneeId IN (:...teamMemberIds)", {
-                    teamMemberIds,
-                });
-            } else {
-                // Handle case where TO has no team members
-                query.where("1 = 0"); // No tasks will be selected
-            }
-        } else if (userRoles.includes("PO") || userRoles.includes("BO")) {
-            // Project Owners and Brand Owners can see their own and delegated tasks
-            query.where(
-                "task.assigneeId = :userId OR task.creatorId = :userId",
-                { userId: user.id }
-            );
+            query.andWhere("task.assigneeId IN (:...teamMemberIds)", {
+                teamMemberIds,
+            });
         } else {
-            // Regular users can see their own and delegated tasks
-            query.where(
-                "task.assigneeId = :userId OR task.creatorId = :userId",
+            // All others can view tasks assigned to or created by them
+            query.andWhere(
+                "(task.assigneeId = :userId OR task.creatorId = :userId)",
                 { userId: user.id }
             );
         }
@@ -169,19 +171,16 @@ class TaskService {
         if (filters.taskType) {
             this.applyTaskTypeFilter(query, filters.taskType, user);
         }
-
         if (filters.assignedBy) {
             query.andWhere("creator.id = :assignedBy", {
                 assignedBy: filters.assignedBy,
             });
         }
-
         if (filters.assignedTo) {
             query.andWhere("assignee.id = :assignedTo", {
                 assignedTo: filters.assignedTo,
             });
         }
-
         if (filters.teamOwner) {
             const teamMemberIds = await this.getTeamOwnerIds(user);
             if (teamMemberIds.length > 0) {
@@ -190,23 +189,19 @@ class TaskService {
                 });
             }
         }
-
         if (filters.dueDatePassed) {
             query.andWhere("task.due_date < :now", { now: new Date() });
         }
-
         if (filters.brandName) {
             query.andWhere("brand.brand_name LIKE :brandName", {
                 brandName: `%${filters.brandName}%`,
             });
         }
-
         if (filters.inventoryName) {
             query.andWhere("inventory.name LIKE :inventoryName", {
                 inventoryName: `%${filters.inventoryName}%`,
             });
         }
-
         if (filters.eventName) {
             query.andWhere("event.name LIKE :eventName", {
                 eventName: `%${filters.eventName}%`,

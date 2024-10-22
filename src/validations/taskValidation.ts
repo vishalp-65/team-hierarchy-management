@@ -71,6 +71,24 @@ export const getTasksSchema = z.object({
     eventName: z.string().optional(),
     sortBy: z.enum(["title", "due_date", "status"]).optional(),
     order: z.enum(["asc", "desc"]).optional(),
+    page: z
+        .string()
+        .or(z.number())
+        .optional()
+        .default("1")
+        .transform((val) => Number(val))
+        .refine((n) => n > 0, {
+            message: "Page must be greater than 0",
+        }),
+    limit: z
+        .string()
+        .or(z.number())
+        .optional()
+        .default("10")
+        .transform((val) => Number(val))
+        .refine((n) => n > 0, {
+            message: "Limit must be greater than 0",
+        }),
 });
 
 // Update task status schema

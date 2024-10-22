@@ -8,7 +8,7 @@ import httpStatus from "http-status";
 import errorHandler from "./middlewares/errorHandler";
 import apiRoutes from "./routes/index";
 import AppDataSource from "./data-source";
-import { seedRoles } from "./seeds/roles.seed";
+import { seedAdminUser, seedRoles } from "./seeds/roles.seed";
 import swaggerRoutes from "./config/swagger";
 import cron from "node-cron";
 import { SLAServiceInstance } from "./services/sla.service";
@@ -49,8 +49,11 @@ if (config.NODE_ENV !== "test") {
         .then(() => {
             console.log("Data Source has been initialized!");
             seedRoles().then(() => {
-                app.listen(config.PORT, () => {
-                    console.log(`Server running at ${config.PORT}`);
+                seedAdminUser().then(() => {
+                    // Just to seed admin user for empty database or test
+                    app.listen(config.PORT, () => {
+                        console.log(`Server running at ${config.PORT}`);
+                    });
                 });
             });
         })

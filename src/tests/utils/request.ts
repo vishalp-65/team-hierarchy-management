@@ -1,13 +1,17 @@
 import request from "supertest";
 import app from "../..";
-import { token } from "../mocks/mockData";
 import AppDataSource from "../../data-source";
+import { seedAdminUser } from "../../seeds/roles.seed";
+
+let token: string;
 
 // Ensure the DataSource is initialized before all tests
 beforeAll(async () => {
     try {
         if (!AppDataSource.isInitialized) {
-            await AppDataSource.initialize();
+            await AppDataSource.initialize().then(async () => {
+                token = await seedAdminUser();
+            });
         }
     } catch (error) {
         console.error("Error during Data Source initialization:", error);
@@ -32,7 +36,7 @@ export const makeRequest = async (
     method: string,
     endpoint: string,
     data?: any,
-    loggedInUser: string = token.admin
+    loggedInUser: string = token
 ) => {
     switch (method.toLowerCase()) {
         case "get":

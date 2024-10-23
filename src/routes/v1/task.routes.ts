@@ -5,6 +5,7 @@ import {
     createTask,
     deleteTask,
     editTask,
+    getComments,
     getTaskHistory,
     getTasks,
     updateTaskStatus,
@@ -58,5 +59,8 @@ router.post(
 
 // Route to get Task History
 router.get("/:taskId/history", checkTaskPermissions, getTaskHistory);
+
+// Get comment route
+router.get("/comment", checkTaskPermissions, getComments);
 
 export default router;

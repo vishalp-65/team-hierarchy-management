@@ -7,6 +7,7 @@ import { TaskValidationInstance } from "../validations/taskValidation";
 import { IGetUserAuthInfoRequest } from "../middlewares/auth.middleware";
 import { handleValidationErrors } from "../utils/errorHandler";
 import sendResponse from "../utils/responseHandler";
+import { paginationSchema } from "../validations/reqValidations";
 
 // Create a new task
 export const createTask = catchAsync(
@@ -108,10 +109,42 @@ export const addComment = catchAsync(
     }
 );
 
+// Get comments
+export const getComments = catchAsync(
+    async (req: IGetUserAuthInfoRequest, res: Response) => {
+        const validatedData = handleValidationErrors(
+            TaskValidationInstance.getComment(req.query)
+        );
+        const { taskId, page, limit } = validatedData?.data;
+
+        const comment = await TaskServiceInstance.getComments(
+            taskId,
+            req.user,
+            { page, limit }
+        );
+
+        sendResponse(
+            res,
+            httpStatus.OK,
+            true,
+            "Comments fetched successfully",
+            comment
+        );
+    }
+);
+
 // Get task history
 export const getTaskHistory = catchAsync(
     async (req: IGetUserAuthInfoRequest, res: Response) => {
         const { taskId } = req.params;
+        if (!taskId) {
+            return sendResponse(
+                res,
+                httpStatus.BAD_REQUEST,
+                false,
+                "Invalid taskId"
+            );
+        }
         const history = await TaskServiceInstance.getTaskHistory(
             taskId,
             req.user

@@ -121,11 +121,7 @@ class TaskService {
         const { page = 1, limit = 10 } = filters;
 
         // Generate a unique cache key based on user ID and filters
-        const cacheKey = generateCacheKey("tasks", user.id, {
-            ...filters,
-            page,
-            limit,
-        });
+        const cacheKey = generateCacheKey("tasks", user.id, {});
 
         // Check if tasks are in cache
         const cachedTasks = await getFromCache<{
@@ -143,8 +139,6 @@ class TaskService {
             .leftJoinAndSelect("task.brand", "brand")
             .leftJoinAndSelect("task.event", "event")
             .leftJoinAndSelect("task.inventory", "inventory")
-            .leftJoinAndSelect("task.comments", "comments")
-            .leftJoinAndSelect("comments.author", "commentAuthor")
             .leftJoinAndSelect("task.history", "history")
             .leftJoinAndSelect("history.performed_by", "historyUser");
 
@@ -420,7 +414,13 @@ class TaskService {
 
         // Invalidate cache
         const taskListCacheKey = generateCacheKey("tasks", user.id, {});
+        const taskHistoryCacheKey = generateCacheKey(
+            "taskHistory",
+            task.id,
+            {}
+        );
         await clearCache(taskListCacheKey);
+        await clearCache(taskHistoryCacheKey);
 
         // Sending notification to new assignee and oldAssignee
         if (assigneeChanged && oldAssignee) {
@@ -538,32 +538,37 @@ class TaskService {
         content: string,
         user: User,
         file?: Express.Multer.File
-    ): Promise<Comment> {
+    ): Promise<Omit<Comment, "task">> {
+        // Fetch the task by its id with relations (creator, assignee)
         const task = await this.taskRepo.findOne({
             where: { id: taskId },
             relations: ["creator", "assignee"],
         });
+
+        // If the task is not found, throw an error
         if (!task) {
             throw new ApiError(httpStatus.NOT_FOUND, "Task not found");
         }
 
+        // Create a new comment entity
         const comment = new Comment();
         comment.content = content;
         comment.task = task;
         comment.author = user;
 
-        // Handle file upload
+        // Handle file upload if file is present
         if (file) {
-            comment.file_path = file.path; // Store the file path
+            comment.file_path = file.path;
             comment.file_type = file.mimetype;
         }
 
-        await this.commentRepo.save(comment);
+        // Save the comment to the database
+        const createdComment = await this.commentRepo.save(comment);
 
-        // Log in history
+        // Log the task history
         await this.logTaskHistory(task, user, "Comment Added");
 
-        // Notify relevant users
+        // Send notifications to the task creator and assignee (if not the same person)
         await NotificationServiceInstance.sendTaskNotification(
             task.creator,
             task,
@@ -578,25 +583,85 @@ class TaskService {
             );
         }
 
-        // Invalidate cache
-        const taskListCacheKey = generateCacheKey("tasks", user.id, {});
+        // Invalidate cache for the user's task list
+        const taskListCacheKey = generateCacheKey("taskComments", task.id, {});
+        const taskHistoryCacheKey = generateCacheKey(
+            "taskHistory",
+            task.id,
+            {}
+        );
         await clearCache(taskListCacheKey);
+        await clearCache(taskHistoryCacheKey);
 
-        return comment;
+        // Return the created comment but omit the 'task' field
+        const { task: _, ...commentWithoutTask } = createdComment;
+        return commentWithoutTask;
     }
 
     // Get task History
     async getTaskHistory(taskId: string, user: User): Promise<TaskHistory[]> {
+        // Generate a unique cache key based on user ID
+        const cacheKey = generateCacheKey("taskHistory", taskId, {});
+
+        // Check if tasks history are in cache
+        const cachedTasks = await getFromCache<TaskHistory[]>(cacheKey);
+        if (cachedTasks) {
+            return cachedTasks; // Return cached result if exists
+        }
+
         const history = await this.historyRepo.find({
             where: { task: { id: taskId } },
             relations: ["performed_by"],
             order: { timestamp: "DESC" },
         });
 
-        // Invalidate cache
-        const taskListCacheKey = generateCacheKey("tasks", user.id, {});
-        await clearCache(taskListCacheKey);
+        // store cache
+        await setCache(cacheKey, history, 3600);
+
         return history;
+    }
+
+    // Get comment related to task
+    async getComments(
+        taskId: string,
+        user: User,
+        options: { page?: number; limit?: number } = {}
+    ): Promise<Comment[]> {
+        const { page = 1, limit = 10 } = options;
+
+        // Generate a unique cache key based on user ID and filters
+        const cacheKey = generateCacheKey("taskComments", taskId, { options });
+
+        // Check if tasks are in cache
+        const cachedTasks = await getFromCache<Comment[]>(cacheKey);
+        if (cachedTasks) {
+            return cachedTasks; // Return cached result if exists
+        }
+
+        // Fetch the task with its relations (creator, assignee)
+        const task = await this.taskRepo.findOne({
+            where: { id: taskId },
+            relations: ["creator", "assignee"],
+        });
+
+        // If task not found, throw an error
+        if (!task) {
+            throw new ApiError(httpStatus.NOT_FOUND, "Task not found");
+        }
+
+        // Fetch comments related to the task, applying pagination (skip and take)
+        const comments = await this.commentRepo.find({
+            where: { task: { id: task.id } },
+            skip: (page - 1) * limit,
+            take: limit,
+            order: { created_at: "ASC" },
+            relations: ["author"],
+        });
+
+        // set cache for comments
+        await setCache(cacheKey, comments);
+
+        return comments;
     }
 
     // Log task history and track changes

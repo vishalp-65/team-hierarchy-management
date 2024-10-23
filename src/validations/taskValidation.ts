@@ -101,6 +101,29 @@ export const addCommentSchema = z.object({
     content: z.string().min(1, "Comment content is required"),
 });
 
+// get comment schema
+export const commentPaginationSchema = z.object({
+    taskId: z.string().min(1, "taskId is required"),
+    page: z
+        .string()
+        .or(z.number())
+        .optional()
+        .default("1")
+        .transform((val) => Number(val))
+        .refine((n) => n > 0, {
+            message: "Page must be greater than 0",
+        }),
+    limit: z
+        .string()
+        .or(z.number())
+        .optional()
+        .default("10")
+        .transform((val) => Number(val))
+        .refine((n) => n > 0, {
+            message: "Limit must be greater than 0",
+        }),
+});
+
 // Validation class
 class TaskValidation {
     createTask(data: any) {
@@ -121,6 +144,9 @@ class TaskValidation {
 
     addComment(data: any) {
         return addCommentSchema.safeParse(data);
+    }
+    getComment(data: any) {
+        return commentPaginationSchema.safeParse(data);
     }
 }
 

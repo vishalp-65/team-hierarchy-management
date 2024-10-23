@@ -2,16 +2,14 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import "reflect-metadata";
-import { config } from "./config/server_config";
 import { ApiError } from "./utils/ApiError";
 import httpStatus from "http-status";
 import errorHandler from "./middlewares/errorHandler";
 import apiRoutes from "./routes/index";
-import AppDataSource from "./data-source";
-import { seedAdminUser, seedRoles } from "./seeds/roles.seed";
 import swaggerRoutes from "./config/swagger";
 import cron from "node-cron";
 import { SLAServiceInstance } from "./services/sla.service";
+import { startServer } from "./config/database_config";
 
 dotenv.config(); // Load environment variables
 
@@ -43,23 +41,8 @@ cron.schedule("0 * * * *", async () => {
     await SLAServiceInstance.monitorSLAs();
 });
 
-// Initialize the database and start the server
-if (config.NODE_ENV !== "test") {
-    AppDataSource.initialize()
-        .then(() => {
-            console.log("Data Source has been initialized!");
-            seedRoles().then(() => {
-                seedAdminUser().then(() => {
-                    // Just to seed admin user for empty database or test
-                    app.listen(config.PORT, () => {
-                        console.log(`Server running at ${config.PORT}`);
-                    });
-                });
-            });
-        })
-        .catch((error) => {
-            console.error("Error during Data Source initialization:", error);
-        });
-}
+startServer().catch((error) => {
+    console.error("Failed to start the server:", error);
+});
 
 export default app;

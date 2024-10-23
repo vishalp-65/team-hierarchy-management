@@ -9,6 +9,7 @@ import analyticsRoutes from "./analytics.routes";
 import notificationRoutes from "./notification.routes";
 import eventsRoutes from "./event.routes";
 import inventoryRoutes from "./inventory.routes";
+import filterRoutes from "./filter.routes";
 
 const router = Router();
 
@@ -38,5 +39,8 @@ router.use("/inventory", inventoryRoutes);
 
 // Event routes
 router.use("/event", eventsRoutes);
+
+// filter routes
+router.use("/filter", filterRoutes);
 
 export default router;

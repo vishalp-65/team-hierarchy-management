@@ -54,7 +54,7 @@ export const generateBrandData = (ownerIds: string[]): BrandData => {
 // Generate random task mock data
 export const generateTaskData = (
     task_type: TaskType,
-    assigneeId: string,
+    assigneeId?: string,
     id?: string
 ): TaskData => {
     const baseTaskData: TaskData = {

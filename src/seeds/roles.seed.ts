@@ -1,5 +1,5 @@
 import { In } from "typeorm";
-import { adminUserMock } from "../constant/enums";
+import { adminUserMock, defaultRoles } from "../constant/enums";
 import AppDataSource from "../data-source";
 import { Role } from "../entities/Role";
 import { User } from "../entities/User";
@@ -10,13 +10,11 @@ import { usersTypes } from "../types/types";
 export const seedRoles = async () => {
     const roleRepo = AppDataSource.getRepository(Role);
 
-    const defaultRoles = ["ADMIN", "MG", "PO", "BO", "TO"];
-
     // Check if roles already exist
     const existingRoles = await roleRepo.find();
     if (existingRoles.length === 0) {
         // Insert default roles into the database
-        const rolesToInsert = defaultRoles.map((roleName) => {
+        const rolesToInsert = defaultRoles.map((roleName: string) => {
             return roleRepo.create({ role_name: roleName });
         });
 

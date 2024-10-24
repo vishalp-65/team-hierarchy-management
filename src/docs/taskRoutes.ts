@@ -117,6 +117,39 @@
  *       401:
  *         description: Unauthorized
  *
+ * /api/v1/task/comment:
+ *   get:
+ *     summary: Fetch all comment related to task
+ *     tags: [User]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: taskId
+ *         in: query
+ *         required: false
+ *         schema:
+ *           type: string
+ *         description: ID of the task
+ *       - name: page
+ *         in: query
+ *         required: false
+ *         schema:
+ *           type: number
+ *         description: page number you want
+ *       - name: limit
+ *         in: query
+ *         required: false
+ *         schema:
+ *           type: number
+ *         description: Limit of comment per page
+ *     responses:
+ *       200:
+ *         description: Comments fetched successfully
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized
+ *
  * /api/v1/task/{id}/status:
  *   patch:
  *     summary: Update existing task status

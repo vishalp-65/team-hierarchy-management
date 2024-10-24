@@ -1,38 +1,45 @@
 /**
  * @swagger
- * /api/v1/user/team:
+ * /api/v1/filter/brands:
  *   get:
- *     summary: List all teammates
- *     tags: [User]
+ *     summary: List of all brands
+ *     tags: [Filter]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - name: page
+ *         in: query
+ *         required: false
+ *         schema:
+ *           type: number
+ *         description: page number you want
+ *       - name: limit
+ *         in: query
+ *         required: false
+ *         schema:
+ *           type: number
+ *         description: Limit of brands per page
  *     responses:
  *       200:
- *         description: List of teammates
+ *         description: List of brands
  *         content:
  *           application/json:
  *             schema:
  *               type: array
  *               items:
- *                 $ref: '#/components/schemas/User'
+ *                 $ref: '#/components/schemas/Brand'
  *       401:
  *         description: Unauthorized
  *
- * /api/v1/user/search:
+ * /api/v1/filter/team:
  *   get:
- *     summary: Search for a user
- *     tags: [User]
+ *     summary: List of teams
+ *     tags: [Filter]
  *     security:
  *       - bearerAuth: []
- *     parameters:
- *       - name: q
- *         in: query
- *         required: true
- *         schema:
- *           type: string
  *     responses:
  *       200:
- *         description: User found
+ *         description: Team found
  *         content:
  *           application/json:
  *             schema:
@@ -41,12 +48,12 @@
  *                 user:
  *                   $ref: '#/components/schemas/User'
  *       404:
- *         description: User not found
+ *         description: Team not found
  *
- * /api/v1/user:
+ * /api/v1/filter/users:
  *   get:
  *     summary: Fetch all users with pagination
- *     tags: [User]
+ *     tags: [Filter]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -64,17 +71,9 @@
  *         description: Limit of user per page
  *     responses:
  *       200:
- *         description: Tasks fetched successfully
+ *         description: users fetched successfully
  *       400:
  *         description: Invalid input
  *       401:
  *         description: Unauthorized
- *
- * /api/info:
- *   get:
- *     summary: Check if API is live
- *     tags: [Info]
- *     responses:
- *       200:
- *         description: API is working fine
  */

@@ -1,5 +1,3 @@
-import httpStatus from "http-status";
-
 class ApiError extends Error {
     statusCode: number;
     isOperational: boolean;
@@ -20,13 +18,4 @@ class ApiError extends Error {
         }
     }
 }
-
-const handleInvalidNodeError = () =>
-    new ApiError(httpStatus.BAD_REQUEST, "Invalid Node");
-const handleCycleError = () =>
-    new ApiError(
-        httpStatus.CONFLICT,
-        "Cycle detected in the organization tree"
-    );
-
-export { ApiError, handleInvalidNodeError, handleCycleError };
+export { ApiError };

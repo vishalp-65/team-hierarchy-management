@@ -180,6 +180,10 @@ class AdminService {
             }
         }
 
+        // Invalidate cache
+        await invalidateAllPrefixCache("users", userId);
+        await invalidateAllPrefixCache("userSearch", userId);
+
         return user;
     }
 
@@ -283,6 +287,9 @@ class AdminService {
         });
         user.roles = roles;
         await this.userRepo.save(user);
+
+        // Invalidate cache
+        await invalidateAllPrefixCache("userSearch", userId);
         return user;
     }
 

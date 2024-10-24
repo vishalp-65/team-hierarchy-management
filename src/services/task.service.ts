@@ -14,13 +14,11 @@ import { Repository, SelectQueryBuilder } from "typeorm";
 import { Comment } from "../entities/Comment";
 import { Notification } from "../entities/Notification";
 import {
-    clearCache,
     generateCacheKey,
     getFromCache,
     invalidateAllPrefixCache,
     setCache,
 } from "../utils/cacheHandler";
-import { redis } from "../config/redis_config";
 
 class TaskService {
     private notificationRepo: Repository<Notification>;
@@ -110,8 +108,8 @@ class TaskService {
         );
 
         // Invalidate task list cache for the user
-        const taskListCacheKey = generateCacheKey("tasks", creator.id, {});
-        await clearCache(taskListCacheKey);
+        await invalidateAllPrefixCache("tasks", creator.id);
+        await invalidateAllPrefixCache("analytics", creator.id);
 
         return task;
     }
@@ -123,7 +121,7 @@ class TaskService {
         const { page = 1, limit = 10 } = filters;
 
         // Generate a unique cache key based on user ID and filters
-        const cacheKey = generateCacheKey("tasks", user.id, {});
+        const cacheKey = generateCacheKey("tasks", user.id, { page, limit });
 
         // Check if tasks are in cache
         const cachedTasks = await getFromCache<{
@@ -332,8 +330,8 @@ class TaskService {
         await this.logTaskHistory(task, user, `Status changed to ${status}`);
 
         // Invalidate cache
-        const taskListCacheKey = generateCacheKey("tasks", user.id, {});
-        await clearCache(taskListCacheKey);
+        await invalidateAllPrefixCache("tasks", user.id);
+        await invalidateAllPrefixCache("analytics", user.id);
 
         return task;
     }
@@ -409,14 +407,9 @@ class TaskService {
         const actions = this.getChangedFields(data, task); // Helper function to log changes
 
         // Invalidate cache
-        const taskListCacheKey = generateCacheKey("tasks", user.id, {});
-        const taskHistoryCacheKey = generateCacheKey(
-            "taskHistory",
-            task.id,
-            {}
-        );
-        await clearCache(taskListCacheKey);
-        await clearCache(taskHistoryCacheKey);
+        await invalidateAllPrefixCache("tasks", user.id);
+        await invalidateAllPrefixCache("taskHistory", task.id);
+        await invalidateAllPrefixCache("analytics", user.id);
 
         // Sending notification to new assignee and oldAssignee
         if (assigneeChanged && oldAssignee) {
@@ -520,8 +513,8 @@ class TaskService {
         await this.taskRepo.delete(task.id);
 
         // Invalidate cache
-        const taskListCacheKey = generateCacheKey("tasks", user.id, {});
-        await clearCache(taskListCacheKey);
+        await invalidateAllPrefixCache("tasks", user.id);
+        await invalidateAllPrefixCache("analytics", user.id);
 
         return;
     }
@@ -574,12 +567,7 @@ class TaskService {
 
         // Invalidate all cache entries related to task comments (for all pages)
         await invalidateAllPrefixCache("taskComments", task.id);
-        const taskHistoryCacheKey = generateCacheKey(
-            "taskHistory",
-            task.id,
-            {}
-        );
-        await clearCache(taskHistoryCacheKey);
+        await invalidateAllPrefixCache("taskHistory", task.id);
 
         // Return the created comment but omit the 'task' field
         const { task: _, ...commentWithoutTask } = createdComment;
@@ -587,9 +575,18 @@ class TaskService {
     }
 
     // Get task History
-    async getTaskHistory(taskId: string, user: User): Promise<TaskHistory[]> {
+    async getTaskHistory(
+        taskId: string,
+        user: User,
+        options: { page?: number; limit?: number } = {}
+    ): Promise<TaskHistory[]> {
+        const { page = 1, limit = 10 } = options;
+
         // Generate a unique cache key based on user ID
-        const cacheKey = generateCacheKey("taskHistory", taskId, {});
+        const cacheKey = generateCacheKey("taskHistory", taskId, {
+            page,
+            limit,
+        });
 
         // Check if tasks history are in cache
         const cachedTasks = await getFromCache<TaskHistory[]>(cacheKey);
@@ -600,11 +597,13 @@ class TaskService {
         const history = await this.historyRepo.find({
             where: { task: { id: taskId } },
             relations: ["performed_by"],
+            skip: (page - 1) * limit,
+            take: limit,
             order: { timestamp: "DESC" },
         });
 
         // store cache
-        await setCache(cacheKey, history, 3600);
+        await setCache(cacheKey, history);
 
         return history;
     }
@@ -651,7 +650,7 @@ class TaskService {
     }
 
     // Log task history and track changes
-    private async logTaskHistory(
+    async logTaskHistory(
         task: Task,
         user: User,
         action: string,

@@ -32,7 +32,7 @@ export const createInventory = catchAsync(
 );
 
 export const updateInventory = catchAsync(
-    async (req: Request, res: Response) => {
+    async (req: IGetUserAuthInfoRequest, res: Response) => {
         const { id } = req.params;
         if (!id) {
             sendResponse(res, httpStatus.BAD_REQUEST, false, "ID not found");
@@ -43,19 +43,20 @@ export const updateInventory = catchAsync(
 
         const inventory = await InventoryAndEventInstance.updateInventory(
             id,
-            validatedData?.data
+            validatedData?.data,
+            req.user.id
         );
         sendResponse(res, httpStatus.OK, true, "Inventory updated", inventory);
     }
 );
 
 export const deleteInventory = catchAsync(
-    async (req: Request, res: Response) => {
+    async (req: IGetUserAuthInfoRequest, res: Response) => {
         const { id } = req.params;
         if (!id) {
             sendResponse(res, httpStatus.BAD_REQUEST, false, "ID not found");
         }
-        await InventoryAndEventInstance.deleteInventory(id);
+        await InventoryAndEventInstance.deleteInventory(id, req.user.id);
 
         sendResponse(res, httpStatus.OK, true, "Inventory deleted");
     }
@@ -101,31 +102,36 @@ export const createEvent = catchAsync(
     }
 );
 
-export const updateEvent = catchAsync(async (req: Request, res: Response) => {
-    const { id } = req.params;
-    if (!id) {
-        sendResponse(res, httpStatus.BAD_REQUEST, false, "ID not found");
+export const updateEvent = catchAsync(
+    async (req: IGetUserAuthInfoRequest, res: Response) => {
+        const { id } = req.params;
+        if (!id) {
+            sendResponse(res, httpStatus.BAD_REQUEST, false, "ID not found");
+        }
+
+        const validatedData = handleValidationErrors(
+            eventSchema.safeParse(req.body)
+        );
+
+        const event = await InventoryAndEventInstance.updateEvent(
+            id,
+            validatedData?.data,
+            req.user.id
+        );
+        sendResponse(res, httpStatus.OK, true, "Event Updated", event);
     }
+);
 
-    const validatedData = handleValidationErrors(
-        eventSchema.safeParse(req.body)
-    );
-
-    const event = await InventoryAndEventInstance.updateEvent(
-        id,
-        validatedData?.data
-    );
-    sendResponse(res, httpStatus.OK, true, "Event Updated", event);
-});
-
-export const deleteEvent = catchAsync(async (req: Request, res: Response) => {
-    const { id } = req.params;
-    if (!id) {
-        sendResponse(res, httpStatus.BAD_REQUEST, false, "ID not found");
+export const deleteEvent = catchAsync(
+    async (req: IGetUserAuthInfoRequest, res: Response) => {
+        const { id } = req.params;
+        if (!id) {
+            sendResponse(res, httpStatus.BAD_REQUEST, false, "ID not found");
+        }
+        await InventoryAndEventInstance.deleteEvent(id, req.user.id);
+        sendResponse(res, httpStatus.OK, true, "Event deleted");
     }
-    await InventoryAndEventInstance.deleteEvent(id);
-    sendResponse(res, httpStatus.OK, true, "Event deleted");
-});
+);
 
 export const getEventById = catchAsync(async (req: Request, res: Response) => {
     const { id } = req.params;

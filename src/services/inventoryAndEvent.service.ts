@@ -8,6 +8,7 @@ import {
     clearCache,
     generateCacheKey,
     getFromCache,
+    invalidateAllPrefixCache,
     setCache,
 } from "../utils/cacheHandler";
 
@@ -27,44 +28,41 @@ class InventoryAndEvent {
         const inventoryData = await this.inventoryRepo.save(inventory);
 
         // Invalidate cache
-        if (inventoryData) {
-            const cacheKey = generateCacheKey("inventory", userId, {});
-            await clearCache(cacheKey);
-        }
+        await invalidateAllPrefixCache("inventories", userId);
 
         return inventoryData;
     }
 
     // Update Inventory
-    async updateInventory(id: string, data: any) {
+    async updateInventory(id: string, data: any, userId: string) {
         const inventory = await this.inventoryRepo.findOneBy({ id });
         if (!inventory)
             throw new ApiError(httpStatus.NOT_FOUND, "Inventory not found");
         Object.assign(inventory, data);
 
         // Invalidate cache
-        const cacheKey = generateCacheKey("inventory", id, {});
-        await clearCache(cacheKey);
+        await invalidateAllPrefixCache("inventoryByID", id);
+        await invalidateAllPrefixCache("inventories", userId);
 
         return await this.inventoryRepo.save(inventory);
     }
 
     // delete existing inventory
-    async deleteInventory(id: string) {
+    async deleteInventory(id: string, userId: string) {
         const inventory = await this.inventoryRepo.findOneBy({ id });
         if (!inventory)
             throw new ApiError(httpStatus.NOT_FOUND, "Inventory not found");
         await this.inventoryRepo.remove(inventory);
 
         // Invalidate cache
-        const cacheKey = generateCacheKey("inventory", id, {});
-        await clearCache(cacheKey);
+        await invalidateAllPrefixCache("inventoryByID", id);
+        await invalidateAllPrefixCache("inventories", userId);
     }
 
     // Get Inventory by ID
     async getInventoryById(id: string) {
         // Validate cache
-        const cacheKey = generateCacheKey("inventory", id, {});
+        const cacheKey = generateCacheKey("inventoryByID", id, {});
 
         // Check cache
         let inventoryCache = await getFromCache<Inventory>(cacheKey);
@@ -75,7 +73,7 @@ class InventoryAndEvent {
             throw new ApiError(httpStatus.NOT_FOUND, "Inventory not found");
 
         // Cache the result
-        await setCache(cacheKey, inventory, 3600); // Cache for 1 hour
+        await setCache(cacheKey, inventory);
 
         return inventory;
     }
@@ -83,7 +81,7 @@ class InventoryAndEvent {
     // Get All Inventories
     async getInventories(userId: string) {
         // Validate cache
-        const cacheKey = generateCacheKey("inventory", userId, {});
+        const cacheKey = generateCacheKey("inventories", userId, {});
 
         // Check cache
         let inventoryCache = await getFromCache<Inventory>(cacheKey);
@@ -92,7 +90,7 @@ class InventoryAndEvent {
         const inventories = await this.inventoryRepo.find();
 
         // Cache the result
-        await setCache(cacheKey, inventories, 3600); // Cache for 1 hour
+        await setCache(cacheKey, inventories);
 
         return inventories;
     }
@@ -102,39 +100,39 @@ class InventoryAndEvent {
         const event = this.eventRepo.create(data);
 
         // Invalidate cache
-        const cacheKey = generateCacheKey("event", userId, {});
-        await clearCache(cacheKey);
+        await invalidateAllPrefixCache("events", userId);
 
         return await this.eventRepo.save(event);
     }
 
     // Update existing Event
-    async updateEvent(id: string, data: any) {
+    async updateEvent(id: string, data: any, userId: string) {
         const event = await this.eventRepo.findOneBy({ id });
         if (!event) throw new ApiError(httpStatus.NOT_FOUND, "Event not found");
         Object.assign(event, data);
 
         // Invalidate cache
-        const cacheKey = generateCacheKey("event", id, {});
-        await clearCache(cacheKey);
+        await invalidateAllPrefixCache("eventByID", id);
+        await invalidateAllPrefixCache("events", userId);
+
         return await this.eventRepo.save(event);
     }
 
     // Delete an Event
-    async deleteEvent(id: string) {
+    async deleteEvent(id: string, userId: string) {
         const event = await this.eventRepo.findOneBy({ id });
         if (!event) throw new ApiError(httpStatus.NOT_FOUND, "Event not found");
         await this.eventRepo.remove(event);
 
         // Invalidate cache
-        const cacheKey = generateCacheKey("event", id, {});
-        await clearCache(cacheKey);
+        await invalidateAllPrefixCache("eventByID", id);
+        await invalidateAllPrefixCache("events", userId);
     }
 
     // Get Event by ID
     async getEventById(id: string) {
         // Validate cache
-        const cacheKey = generateCacheKey("event", id, {});
+        const cacheKey = generateCacheKey("eventByID", id, {});
 
         // Check cache
         let eventCache = await getFromCache<Event>(cacheKey);
@@ -144,7 +142,7 @@ class InventoryAndEvent {
         if (!event) throw new ApiError(httpStatus.NOT_FOUND, "Event not found");
 
         // Cache the result
-        await setCache(cacheKey, event, 3600); // Cache for 1 hour
+        await setCache(cacheKey, event);
 
         return event;
     }
@@ -152,7 +150,7 @@ class InventoryAndEvent {
     // Get All Events
     async getEvents(userId: string) {
         // Validate cache
-        const cacheKey = generateCacheKey("event", userId, {});
+        const cacheKey = generateCacheKey("events", userId, {});
 
         // Check cache
         let eventCache = await getFromCache<Event>(cacheKey);
@@ -161,7 +159,7 @@ class InventoryAndEvent {
         const events = await this.eventRepo.find();
 
         // Cache the result
-        await setCache(cacheKey, events, 3600); // Cache for 1 hour
+        await setCache(cacheKey, events);
 
         return events;
     }

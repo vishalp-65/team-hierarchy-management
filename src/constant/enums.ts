@@ -1,6 +1,7 @@
 const taskStatus = ["open", "in-progress", "completed", "overdue"];
 const taskType = ["general", "brand", "event", "inventory"];
 const inventoryStatus = ["available", "out_of_stock", "reserved"];
+const defaultRoles = ["ADMIN", "MG", "PO", "BO", "TO"];
 
 const adminUserMock = {
     user_name: "admin user",
@@ -10,4 +11,4 @@ const adminUserMock = {
     roles: ["ADMIN"],
 };
 
-export { taskStatus, taskType, inventoryStatus, adminUserMock };
+export { taskStatus, taskType, inventoryStatus, adminUserMock, defaultRoles };

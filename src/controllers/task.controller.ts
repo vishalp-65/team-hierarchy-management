@@ -115,12 +115,9 @@ export const getComments = catchAsync(
         const validatedData = handleValidationErrors(
             TaskValidationInstance.getComment(req.query)
         );
-        const { taskId, page, limit } = validatedData?.data;
 
         const comment = await TaskServiceInstance.getComments(
-            taskId,
-            req.user,
-            { page, limit }
+            validatedData?.data
         );
 
         sendResponse(

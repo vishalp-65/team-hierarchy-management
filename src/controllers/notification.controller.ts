@@ -13,15 +13,15 @@ export async function getUserNotifications(
 ) {
     // Validate and parse options with Zod
     const parsedOptions = handleValidationErrors(
-        paginationSchema.safeParse(req.params)
+        paginationSchema.safeParse(req.query)
     );
 
     const { page, limit } = parsedOptions.data;
 
     const notifications =
         await NotificationServiceInstance.getNotificationsForUser(req.user.id, {
-            page: Number(page),
-            limit: Number(limit),
+            page: page,
+            limit: limit,
         });
     sendResponse(res, httpStatus.OK, true, "User notification", notifications);
 }

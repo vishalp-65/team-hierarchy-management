@@ -1,7 +1,14 @@
 import { Router } from "express";
-import { listTeammates, searchUser } from "../../controllers/user.controller";
+import {
+    getUsersByRole,
+    listTeammates,
+    searchUser,
+} from "../../controllers/user.controller";
 
 const router = Router();
+
+// Get all users
+router.get("/", getUsersByRole);
 
 // List and view teammates
 router.get("/team", listTeammates);

@@ -17,8 +17,10 @@ import {
     clearCache,
     generateCacheKey,
     getFromCache,
+    invalidateAllPrefixCache,
     setCache,
 } from "../utils/cacheHandler";
+import { redis } from "../config/redis_config";
 
 class TaskService {
     private notificationRepo: Repository<Notification>;
@@ -295,13 +297,11 @@ class TaskService {
         status: string,
         user: User
     ): Promise<Task> {
-        const task = await this.taskRepo.findOne({
-            where: { id: taskId },
-            relations: ["creator", "assignee"],
-        });
-        if (!task) {
-            throw new ApiError(httpStatus.NOT_FOUND, "Task not found");
-        }
+        // Fetch the task with relations (creator, assignee)
+        const task = await this.findTaskWithRelations(taskId, [
+            "creator",
+            "assignee",
+        ]);
 
         // Only assignee can mark as completed
         if (status === "completed" && task.assignee.id !== user.id) {
@@ -348,15 +348,11 @@ class TaskService {
         let assigneeChanged = false;
         let oldAssignee = null;
 
-        // Find task with creator and assignee
-        const task = await this.taskRepo.findOne({
-            where: { id: taskId },
-            relations: ["creator", "assignee"],
-        });
-
-        if (!task) {
-            throw new ApiError(httpStatus.NOT_FOUND, "Task not found");
-        }
+        // Fetch the task with relations (creator, assignee)
+        const task = await this.findTaskWithRelations(taskId, [
+            "creator",
+            "assignee",
+        ]);
 
         // Only the creator can edit the task
         if (task.creator.id !== user.id) {
@@ -474,15 +470,13 @@ class TaskService {
 
     // Delete task
     async deleteTask(taskId: string, user: User): Promise<void> {
-        // Find the task with relations
-        const task = await this.taskRepo.findOne({
-            where: { id: taskId },
-            relations: ["creator", "assignee", "comments", "history"],
-        });
-
-        if (!task) {
-            throw new ApiError(httpStatus.NOT_FOUND, "Task not found");
-        }
+        // Fetch the task with relations (creator, assignee)
+        const task = await this.findTaskWithRelations(taskId, [
+            "creator",
+            "assignee",
+            "comments",
+            "history",
+        ]);
 
         // Only the creator can delete the task
         if (task.creator.id !== user.id) {
@@ -539,16 +533,11 @@ class TaskService {
         user: User,
         file?: Express.Multer.File
     ): Promise<Omit<Comment, "task">> {
-        // Fetch the task by its id with relations (creator, assignee)
-        const task = await this.taskRepo.findOne({
-            where: { id: taskId },
-            relations: ["creator", "assignee"],
-        });
-
-        // If the task is not found, throw an error
-        if (!task) {
-            throw new ApiError(httpStatus.NOT_FOUND, "Task not found");
-        }
+        // Fetch the task with relations (creator, assignee)
+        const task = await this.findTaskWithRelations(taskId, [
+            "creator",
+            "assignee",
+        ]);
 
         // Create a new comment entity
         const comment = new Comment();
@@ -583,14 +572,13 @@ class TaskService {
             );
         }
 
-        // Invalidate cache for the user's task list
-        const taskListCacheKey = generateCacheKey("taskComments", task.id, {});
+        // Invalidate all cache entries related to task comments (for all pages)
+        await invalidateAllPrefixCache("taskComments", task.id);
         const taskHistoryCacheKey = generateCacheKey(
             "taskHistory",
             task.id,
             {}
         );
-        await clearCache(taskListCacheKey);
         await clearCache(taskHistoryCacheKey);
 
         // Return the created comment but omit the 'task' field
@@ -622,15 +610,18 @@ class TaskService {
     }
 
     // Get comment related to task
-    async getComments(
-        taskId: string,
-        user: User,
-        options: { page?: number; limit?: number } = {}
-    ): Promise<Comment[]> {
-        const { page = 1, limit = 10 } = options;
+    async getComments(data: {
+        taskId: string;
+        page: number;
+        limit: number;
+    }): Promise<Comment[]> {
+        const { taskId, page = 1, limit = 10 } = data;
 
         // Generate a unique cache key based on user ID and filters
-        const cacheKey = generateCacheKey("taskComments", taskId, { options });
+        const cacheKey = generateCacheKey("taskComments", taskId, {
+            page,
+            limit,
+        });
 
         // Check if tasks are in cache
         const cachedTasks = await getFromCache<Comment[]>(cacheKey);
@@ -638,16 +629,11 @@ class TaskService {
             return cachedTasks; // Return cached result if exists
         }
 
-        // Fetch the task with its relations (creator, assignee)
-        const task = await this.taskRepo.findOne({
-            where: { id: taskId },
-            relations: ["creator", "assignee"],
-        });
-
-        // If task not found, throw an error
-        if (!task) {
-            throw new ApiError(httpStatus.NOT_FOUND, "Task not found");
-        }
+        // Fetch the task with relations (creator, assignee)
+        const task = await this.findTaskWithRelations(taskId, [
+            "creator",
+            "assignee",
+        ]);
 
         // Fetch comments related to the task, applying pagination (skip and take)
         const comments = await this.commentRepo.find({
@@ -683,6 +669,25 @@ class TaskService {
 
         // Save the history record
         await this.historyRepo.save(history);
+    }
+
+    // Helper: Find task with required relations
+    private async findTaskWithRelations(
+        taskId: string,
+        relations: string[]
+    ): Promise<Task> {
+        // Finding task with relation
+        const task = await this.taskRepo.findOne({
+            where: { id: taskId },
+            relations: relations,
+        });
+
+        // If task not found, throw error
+        if (!task) {
+            throw new ApiError(httpStatus.NOT_FOUND, "Task not found");
+        }
+
+        return task;
     }
 }
 

@@ -31,3 +31,19 @@ export const generateCacheKey = (
 export const clearCache = async (key: string): Promise<void> => {
     await redis.del(key);
 };
+
+export const invalidateAllPrefixCache = async (
+    name: string,
+    prefixId: string
+): Promise<void> => {
+    // Define a prefix for the cache key (name)
+    const cacheKeyPrefix = `${name}:${prefixId}:`;
+
+    // Get all keys with the name prefix (for all pagination pages)
+    const keys = await redis.keys(`${cacheKeyPrefix}*`);
+
+    // If any keys exist, delete them all to ensure the cache is invalidated
+    if (keys.length > 0) {
+        await redis.del(keys);
+    }
+};

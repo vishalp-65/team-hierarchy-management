@@ -80,16 +80,20 @@ export const contactSchema = z.object({
 
 export const paginationSchema = z.object({
     page: z
-        .number()
+        .string()
+        .or(z.number())
         .optional()
-        .default(1)
+        .default("1")
+        .transform((val) => Number(val))
         .refine((n) => n > 0, {
             message: "Page must be greater than 0",
         }),
     limit: z
-        .number()
+        .string()
+        .or(z.number())
         .optional()
-        .default(10)
+        .default("10")
+        .transform((val) => Number(val))
         .refine((n) => n > 0, {
             message: "Limit must be greater than 0",
         }),

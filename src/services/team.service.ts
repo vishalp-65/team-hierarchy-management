@@ -73,10 +73,36 @@ class TeamService {
         // Build the hierarchy tree starting from the root user
         const hierarchy = buildHierarchy(user);
 
-        return {
-            success: true,
-            hierarchy,
-        };
+        return hierarchy;
+    }
+
+    // Get all team owners
+    async getAllTeamOwners() {
+        const userRepo = AppDataSource.getRepository(User);
+        return await userRepo.find({
+            where: { roles: { role_name: "TO" } },
+            relations: ["team"],
+        });
+    }
+
+    async getAuthorizedTeamOwners(userId: string) {
+        const userRepo = AppDataSource.getRepository(User);
+        const user = await userRepo.findOne({
+            where: { id: userId },
+            relations: ["team", "team.members"],
+        });
+
+        if (!user) {
+            throw new ApiError(httpStatus.NOT_FOUND, "User not found");
+        }
+
+        const teamMembers = user.team ? user.team.members : [];
+
+        const teamOwners = teamMembers.filter((member) =>
+            member.roles.some((role) => role.role_name === "TO")
+        );
+
+        return teamOwners;
     }
 }
 

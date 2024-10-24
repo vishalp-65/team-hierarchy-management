@@ -9,16 +9,22 @@ import {
 } from "../validations/reqValidations";
 import { handleValidationErrors } from "../utils/errorHandler";
 import sendResponse from "../utils/responseHandler";
+import { IGetUserAuthInfoRequest } from "../middlewares/auth.middleware";
 
 // Create a new user
-export const createUser = catchAsync(async (req: Request, res: Response) => {
-    const validatedData = handleValidationErrors(
-        userSchema.safeParse(req.body)
-    );
+export const createUser = catchAsync(
+    async (req: IGetUserAuthInfoRequest, res: Response) => {
+        const validatedData = handleValidationErrors(
+            userSchema.safeParse(req.body)
+        );
 
-    const user = await adminService.createUser(validatedData?.data);
-    sendResponse(res, httpStatus.CREATED, true, "User created", user);
-});
+        const user = await adminService.createUser(
+            validatedData?.data,
+            req.user.id
+        );
+        sendResponse(res, httpStatus.CREATED, true, "User created", user);
+    }
+);
 
 // Update an existing user
 export const updateUser = catchAsync(async (req: Request, res: Response) => {
@@ -31,13 +37,18 @@ export const updateUser = catchAsync(async (req: Request, res: Response) => {
 });
 
 // Create a new brand
-export const createBrand = catchAsync(async (req: Request, res: Response) => {
-    const validatedData = handleValidationErrors(
-        brandSchema.safeParse(req.body)
-    );
-    const brand = await adminService.createBrand(validatedData?.data);
-    sendResponse(res, httpStatus.CREATED, true, "Brand created", brand);
-});
+export const createBrand = catchAsync(
+    async (req: IGetUserAuthInfoRequest, res: Response) => {
+        const validatedData = handleValidationErrors(
+            brandSchema.safeParse(req.body)
+        );
+        const brand = await adminService.createBrand(
+            validatedData?.data,
+            req.user.id
+        );
+        sendResponse(res, httpStatus.CREATED, true, "Brand created", brand);
+    }
+);
 
 // Update an existing brand
 export const updateBrand = catchAsync(async (req: Request, res: Response) => {

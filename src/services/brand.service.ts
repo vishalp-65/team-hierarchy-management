@@ -9,11 +9,12 @@ import {
     clearCache,
     generateCacheKey,
     getFromCache,
+    invalidateAllPrefixCache,
     setCache,
 } from "../utils/cacheHandler";
 
 class BrandService {
-    async createBrand(user: any, brandData: brandTypes) {
+    async createBrand(user: User, brandData: brandTypes) {
         const brandRepo = AppDataSource.getRepository(Brand);
         const contactPersonRepo = AppDataSource.getRepository(ContactPerson);
 
@@ -60,8 +61,7 @@ class BrandService {
         });
 
         // Invalidate cache
-        const cacheKey = generateCacheKey("brand", user.id, {});
-        await clearCache(cacheKey);
+        await invalidateAllPrefixCache("brands", user.id);
 
         return createdBrand;
     }
@@ -95,8 +95,7 @@ class BrandService {
         });
 
         // Invalidate cache
-        const cacheKey = generateCacheKey("brand", brandId, {});
-        await clearCache(cacheKey);
+        await invalidateAllPrefixCache("brand", brand.id);
 
         return updatedBrand;
     }
@@ -118,7 +117,38 @@ class BrandService {
         });
 
         // Cache the result
-        await setCache(cacheKey, brands, 3600); // Cache for 1 hour
+        await setCache(cacheKey, brands);
+
+        return brands;
+    }
+
+    // Get all brands
+    async getAllBrands(
+        options: { page?: number; limit?: number } = {},
+        userId: string
+    ) {
+        const { page = 1, limit = 10 } = options;
+
+        // Generate a unique cache key based on user ID and filters
+        const cacheKey = generateCacheKey("brands", userId, {
+            page,
+            limit,
+        });
+
+        // Check if brand are in cache
+        const cachedBrands = await getFromCache<Brand[]>(cacheKey);
+        if (cachedBrands) {
+            return cachedBrands; // Return cached result if exists
+        }
+        const brandRepo = AppDataSource.getRepository(Brand);
+        const brands = await brandRepo.find({
+            relations: ["owners", "contactPersons"],
+            skip: (page - 1) * limit,
+            take: limit,
+        });
+
+        // set cache for brands
+        await setCache(cacheKey, brands);
 
         return brands;
     }
@@ -197,7 +227,7 @@ class BrandService {
             }
 
             // Cache the result
-            await setCache(cacheKey, brand, 3600); // Cache for 1 hour
+            await setCache(cacheKey, brand); // Cache for 1 hour
 
             return brand;
         }

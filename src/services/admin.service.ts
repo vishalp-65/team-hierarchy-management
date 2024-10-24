@@ -8,7 +8,11 @@ import { Role } from "../entities/Role";
 import { Brand } from "../entities/Brand";
 import { ContactPerson } from "../entities/ContactPerson";
 import { brandTypes, usersTypes } from "../types/types";
-import { clearCache, generateCacheKey } from "../utils/cacheHandler";
+import {
+    clearCache,
+    generateCacheKey,
+    invalidateAllPrefixCache,
+} from "../utils/cacheHandler";
 
 class AdminService {
     private userRepo: Repository<User>;
@@ -25,7 +29,7 @@ class AdminService {
         this.roleRepo = AppDataSource.getRepository(Role);
     }
     // Create a new user
-    async createUser(userData: usersTypes) {
+    async createUser(userData: usersTypes, userId?: string) {
         // Check if user already exists
         const userExists = await this.userRepo.findOneBy({
             email: userData.email,
@@ -94,8 +98,8 @@ class AdminService {
         }
 
         // Invalidate cache
-        const cacheKey = generateCacheKey("users", user.id, {});
-        await clearCache(cacheKey);
+        await invalidateAllPrefixCache("users", userId);
+        await invalidateAllPrefixCache("userSearch", userId);
 
         return user;
     }
@@ -180,7 +184,7 @@ class AdminService {
     }
 
     // Create a new brand
-    async createBrand(brandData: brandTypes) {
+    async createBrand(brandData: brandTypes, userId: string) {
         if (!brandData.ownerIds) {
             throw new ApiError(
                 httpStatus.BAD_REQUEST,
@@ -229,6 +233,9 @@ class AdminService {
             where: { id: brand.id },
             relations: ["owners", "contactPersons"],
         });
+
+        // Invalidate cache
+        await invalidateAllPrefixCache("brands", userId);
 
         return updatedBrand;
     }

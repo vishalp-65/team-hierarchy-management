@@ -1,5 +1,9 @@
 import { Response } from "express";
-import { brandSchema, updateBrandSchema } from "../validations/reqValidations";
+import {
+    brandSchema,
+    paginationSchema,
+    updateBrandSchema,
+} from "../validations/reqValidations";
 import { brandService } from "../services/brand.service";
 import catchAsync from "../utils/catchAsync";
 import httpStatus from "http-status";
@@ -43,7 +47,28 @@ export const updateBrand = catchAsync(
 
 export const getBrands = catchAsync(
     async (req: IGetUserAuthInfoRequest, res: Response) => {
-        const brands = await brandService.getBrandsOwnedByUser(req.user.id);
+        let brands: any;
+        // Validate and parse options with Zod
+        const parsedOptions = handleValidationErrors(
+            paginationSchema.safeParse(req.query)
+        );
+        const { page, limit } = parsedOptions.data;
+
+        const userRoles = req.user.roles.map((role) => role.role_name);
+
+        if (userRoles.includes("ADMIN") || userRoles.includes("MG")) {
+            // ADMIN and MG have access to all brands
+            brands = await brandService.getAllBrands(
+                {
+                    page: page,
+                    limit: limit,
+                },
+                req.user.id
+            );
+        } else {
+            // For TO, PO, BO, only show their owned or authorized brands
+            brands = await brandService.getBrandsOwnedByUser(req.user.id);
+        }
         sendResponse(res, httpStatus.OK, true, "All brands", brands);
     }
 );

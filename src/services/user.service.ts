@@ -32,7 +32,7 @@ class UserService {
 
     async searchUser(searchTerm: string, userId: string) {
         // Validate cache
-        const cacheKey = generateCacheKey("users", userId, {});
+        const cacheKey = generateCacheKey("userSearch", userId, { searchTerm });
 
         // Check cache
         let userCache = await getFromCache<User>(cacheKey);
@@ -58,6 +58,57 @@ class UserService {
         await setCache(cacheKey, users, 3600); // Cache for 1 hour
 
         return users;
+    }
+
+    async getAllUsers(
+        options: { page?: number; limit?: number } = {},
+        userId: string
+    ) {
+        const { page = 1, limit = 10 } = options;
+
+        // Generate a unique cache key based on user ID and filters
+        const cacheKey = generateCacheKey("users", userId, {
+            page,
+            limit,
+        });
+
+        // Check if users are in cache
+        const cachedUsers = await getFromCache<User[]>(cacheKey);
+        if (cachedUsers) {
+            return cachedUsers; // Return cached result if exists
+        }
+
+        const userRepo = AppDataSource.getRepository(User);
+        const users = await userRepo.find({
+            skip: (page - 1) * limit,
+            take: limit,
+        });
+
+        // set cache for users
+        await setCache(cacheKey, users);
+
+        return users;
+    }
+
+    async getTeamAndBrandUsers(userId: string) {
+        const userRepo = AppDataSource.getRepository(User);
+        const user = await userRepo.findOne({
+            where: { id: userId },
+            relations: ["team", "brands", "team.members"],
+        });
+
+        if (!user) {
+            throw new ApiError(httpStatus.NOT_FOUND, "User not found");
+        }
+
+        const teamMembers = user.team ? user.team.members : [];
+        const brandOwners = user.brands
+            ? user.brands.map((brand) => brand.owners).flat()
+            : [];
+
+        const uniqueUsers = new Set([...teamMembers, ...brandOwners]);
+
+        return Array.from(uniqueUsers);
     }
 }
 

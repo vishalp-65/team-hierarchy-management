@@ -1,7 +1,6 @@
 // src/services/auth.service.ts
 
 import { Repository } from "typeorm";
-import { User } from "../entities/User";
 import AppDataSource from "../data-source";
 import { ApiError } from "../utils/ApiError";
 import httpStatus from "http-status";
@@ -10,6 +9,7 @@ import {
     hashPassword,
     verifyPassword,
 } from "../utils/authUtils";
+import { User } from "../entities/User";
 
 class AuthService {
     private userRepo: Repository<User>;

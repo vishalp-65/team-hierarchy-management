@@ -1,7 +1,7 @@
 // src/controllers/analytics.controller.ts
-import { Request, Response } from "express";
+import { Response } from "express";
 import { AnalyticsServiceInstance } from "../services/analytics.service";
-import catchAsync from "../utils/catchAsync";
+import { catchAsync } from "../utils/catchAsync";
 import httpStatus from "http-status";
 import { z } from "zod";
 import sendResponse from "../utils/responseHandler";

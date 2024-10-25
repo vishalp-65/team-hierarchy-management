@@ -1,7 +1,7 @@
 // controllers/inventoryAndEvent.controller.ts
 import { Request, Response } from "express";
 import httpStatus from "http-status";
-import catchAsync from "../utils/catchAsync";
+import { catchAsync } from "../utils/catchAsync";
 import { InventoryAndEventInstance } from "../services/inventoryAndEvent.service";
 import {
     eventSchema,

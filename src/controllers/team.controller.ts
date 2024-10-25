@@ -1,5 +1,5 @@
 import { Response } from "express";
-import catchAsync from "../utils/catchAsync";
+import { catchAsync } from "../utils/catchAsync";
 import { teamService } from "../services/team.service";
 import httpStatus from "http-status";
 import { IGetUserAuthInfoRequest } from "../middlewares/auth.middleware";

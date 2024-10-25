@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { adminService } from "../services/admin.service";
-import catchAsync from "../utils/catchAsync";
+import { catchAsync } from "../utils/catchAsync";
 import httpStatus from "http-status";
 import {
     assignRoleSchema,

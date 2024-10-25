@@ -1,6 +1,6 @@
 import { Response } from "express";
 import { userService } from "../services/user.service";
-import catchAsync from "../utils/catchAsync";
+import { catchAsync } from "../utils/catchAsync";
 import httpStatus from "http-status";
 import { IGetUserAuthInfoRequest } from "../middlewares/auth.middleware";
 import sendResponse from "../utils/responseHandler";

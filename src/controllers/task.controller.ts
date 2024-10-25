@@ -1,13 +1,12 @@
 // src/controllers/task.controller.ts
 import { Response } from "express";
 import { TaskServiceInstance } from "../services/task.service";
-import catchAsync from "../utils/catchAsync";
+import { catchAsync } from "../utils/catchAsync";
 import httpStatus from "http-status";
 import { TaskValidationInstance } from "../validations/taskValidation";
 import { IGetUserAuthInfoRequest } from "../middlewares/auth.middleware";
 import { handleValidationErrors } from "../utils/errorHandler";
 import sendResponse from "../utils/responseHandler";
-import { paginationSchema } from "../validations/reqValidations";
 
 // Create a new task
 export const createTask = catchAsync(
@@ -147,5 +146,26 @@ export const getTaskHistory = catchAsync(
             req.user
         );
         sendResponse(res, httpStatus.OK, true, "Task history", history);
+    }
+);
+
+export const uploadFile = catchAsync(
+    async (req: IGetUserAuthInfoRequest, res: Response) => {
+        if (!req.file) {
+            sendResponse(res, httpStatus.BAD_REQUEST, false, "File not found");
+        }
+
+        const file = {
+            path: req.file?.path,
+            mimetype: req.file?.mimetype,
+        };
+
+        sendResponse(
+            res,
+            httpStatus.OK,
+            true,
+            "File uploaded successfully",
+            file
+        );
     }
 );

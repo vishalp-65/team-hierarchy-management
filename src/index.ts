@@ -9,12 +9,15 @@ import errorHandler from "./middlewares/errorHandler";
 import apiRoutes from "./routes/index";
 import swaggerRoutes from "./config/swagger";
 import cron from "node-cron";
+import http from "http";
 import { SLAServiceInstance } from "./services/sla.service";
 import { startServer } from "./config/database_config";
+import { initializeSocket } from "./config/socket_config";
 
 dotenv.config(); // Load environment variables
 
 const app = express();
+const server = http.createServer(app);
 
 // Security middleware
 app.use(helmet());
@@ -31,6 +34,13 @@ app.use("/api", apiRoutes);
 
 // Swagger routes
 app.use(swaggerRoutes);
+
+// Initialize socket with server
+initializeSocket(server);
+
+server.listen(8083, () => {
+    console.log("Serve is running as 8083");
+});
 
 // 404 handler for unknown API requests
 app.use((req, res, next) => {

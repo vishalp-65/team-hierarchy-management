@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { contactSchema } from "../validations/reqValidations";
-import catchAsync from "../utils/catchAsync";
+import { catchAsync } from "../utils/catchAsync";
 import httpStatus from "http-status";
 import { contactService } from "../services/contact.service";
 import { handleValidationErrors } from "../utils/errorHandler";

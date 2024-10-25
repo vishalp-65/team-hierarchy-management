@@ -524,7 +524,7 @@ class TaskService {
         taskId: string,
         content: string,
         user: User,
-        file?: Express.Multer.File
+        file?: any
     ): Promise<Omit<Comment, "task">> {
         // Fetch the task with relations (creator, assignee)
         const task = await this.findTaskWithRelations(taskId, [

@@ -5,7 +5,7 @@ import {
     updateBrandSchema,
 } from "../validations/reqValidations";
 import { brandService } from "../services/brand.service";
-import catchAsync from "../utils/catchAsync";
+import { catchAsync } from "../utils/catchAsync";
 import httpStatus from "http-status";
 import { IGetUserAuthInfoRequest } from "../middlewares/auth.middleware";
 import { handleValidationErrors } from "../utils/errorHandler";

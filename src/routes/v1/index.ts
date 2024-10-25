@@ -14,6 +14,8 @@ import eventsRoutes from "./event.routes";
 import inventoryRoutes from "./inventory.routes";
 import filterRoutes from "./filter.routes";
 import authRoutes from "./auth.routes";
+import { upload } from "../../utils/fileUpload";
+import { uploadFile } from "../../controllers/task.controller";
 
 const router = Router();
 
@@ -54,5 +56,8 @@ router.use("/filter", authentication, filterRoutes);
 
 // Auth routes
 router.use("/auth", authRoutes);
+
+// Upload file
+router.post("/file/upload", upload.array("file"), uploadFile);
 
 export default router;

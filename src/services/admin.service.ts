@@ -9,7 +9,8 @@ import { Brand } from "../entities/Brand";
 import { ContactPerson } from "../entities/ContactPerson";
 import { brandTypes, usersTypes } from "../types/types";
 import { invalidateAllPrefixCache } from "../utils/cacheHandler";
-import { generateToken, hashPassword } from "../utils/authUtils";
+import { generateToken } from "../utils/authUtils";
+import { faker } from "@faker-js/faker";
 
 class AdminService {
     private userRepo: Repository<User>;
@@ -59,13 +60,13 @@ class AdminService {
             }
         }
 
-        // Hash password and create the user
-        const hashedPassword = await hashPassword(userData.password);
+        // Create random password first time and create the user
+        const randomPassword = faker.internet.password();
 
         // Create the user
         const user = this.userRepo.create({
             user_name: userData.user_name,
-            password: hashedPassword,
+            password: randomPassword,
             phone_number: userData.phone_number,
             email: userData.email,
             roles: roles,
@@ -164,7 +165,6 @@ class AdminService {
         // Update user details
         Object.assign(user, {
             user_name: userData.user_name || user.user_name,
-            password: userData.password || user.password, // TODO: Hash the password if updated
             phone_number: userData.phone_number || user.phone_number,
             email: userData.email || user.email,
         });

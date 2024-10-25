@@ -42,6 +42,10 @@ export class User {
     })
     roles: Role[];
 
+    // For checking default password
+    @Column({ default: true })
+    isDefaultPassword: boolean;
+
     @CreateDateColumn()
     created_at: Date;
 

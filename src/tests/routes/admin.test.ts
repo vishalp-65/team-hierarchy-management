@@ -17,7 +17,7 @@ describe("Admin Routes", () => {
             "/api/v1/admin/user",
             randomUser
         );
-        user = userRes?.body?.data;
+        user = userRes?.body?.data?.user;
         expect(userRes.status).toBe(httpStatus.CREATED);
         expect(userRes.body.success).toBe(true);
     });
@@ -91,9 +91,6 @@ describe("Admin Routes", () => {
         );
         expect(res.status).toBe(httpStatus.BAD_REQUEST);
         expect(res.body.success).toBe(false);
-        expect(res.body.message).toContain(
-            "user_name Required, password Required"
-        );
     });
 
     it("should return error when updating a non-existent user", async () => {
@@ -118,7 +115,7 @@ describe("Admin Routes", () => {
 
         expect(res.status).toBe(httpStatus.UNAUTHORIZED);
         expect(res.body.success).toBe(false);
-        expect(res.body.message).toBe("Invalid Token");
+        expect(res.body.message).toBe("Unauthorized");
     });
 
     it("should return error when creating a brand with invalid owner ID", async () => {

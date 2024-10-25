@@ -94,7 +94,7 @@ describe("Brand Routes", () => {
     });
 
     it("should fetch an brand successfully", async () => {
-        const res = await makeRequest("get", `/api/v1/brand`, " ", user.id);
+        const res = await makeRequest("get", `/api/v1/brand`, " ", token);
         expect(res.status).toBe(httpStatus.OK);
         expect(res.body.success).toBe(true);
     });

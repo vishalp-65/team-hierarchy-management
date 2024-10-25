@@ -1,5 +1,3 @@
-// src/services/auth.service.ts
-
 import { Repository } from "typeorm";
 import AppDataSource from "../data-source";
 import { ApiError } from "../utils/ApiError";
@@ -18,53 +16,78 @@ class AuthService {
         this.userRepo = AppDataSource.getRepository(User);
     }
 
+    // User login
     async login(email: string, password: string) {
         const user = await this.findUserByEmail(email);
 
-        // Check if user changed default password
-        if (user.created_at === user.updated_at) {
+        // Check if the user needs to change the default password
+        if (user.isDefaultPassword) {
             throw new ApiError(
                 httpStatus.BAD_REQUEST,
-                "Change default password"
+                "Change default password before logging in."
             );
         }
 
-        // Matching password
+        // Verify password
         const isPasswordMatch = await verifyPassword(password, user.password);
-
         if (!isPasswordMatch) {
-            throw new ApiError(httpStatus.BAD_REQUEST, "Password not match");
+            throw new ApiError(httpStatus.UNAUTHORIZED, "Incorrect password.");
         }
+
+        // Remove password from user before returning
+        const { password: _, ...userWithoutPassword } = user;
 
         // Generate token
         const token = generateToken(user.id);
-
-        return { user, token };
+        return { user: userWithoutPassword, token };
     }
 
-    async resetPassword(email: string, password: string, newPassword: string) {
+    // Reset user password
+    async resetPassword(
+        email: string,
+        currentPassword: string,
+        newPassword: string
+    ) {
         const user = await this.findUserByEmail(email);
 
-        // Matching password
-        const isPasswordMatch = await verifyPassword(password, user.password);
-
-        if (!isPasswordMatch) {
-            throw new ApiError(httpStatus.BAD_REQUEST, "Password not match");
+        // Check if the user is using the default password
+        if (user.isDefaultPassword) {
+            if (user.password !== currentPassword) {
+                throw new ApiError(
+                    httpStatus.BAD_REQUEST,
+                    "Current password does not match the default password."
+                );
+            }
+        } else {
+            // Otherwise, verify the existing password
+            const isPasswordMatch = await verifyPassword(
+                currentPassword,
+                user.password
+            );
+            if (!isPasswordMatch) {
+                throw new ApiError(
+                    httpStatus.UNAUTHORIZED,
+                    "Incorrect current password."
+                );
+            }
         }
 
-        // Hash password
-        await hashPassword(newPassword);
+        // Update password with the new hashed password and reset the default password flag
+        user.password = await hashPassword(newPassword);
+        user.isDefaultPassword = false;
+
+        await this.userRepo.save(user);
     }
 
-    // Helper: Find user by email
+    // Helper function to find user by email
     private async findUserByEmail(email: string): Promise<User> {
-        const user = await this.userRepo.findOne({ where: { email: email } });
-
-        // If user not found, throw error
+        const user = await this.userRepo.findOne({ where: { email } });
         if (!user) {
-            throw new ApiError(httpStatus.NOT_FOUND, "Email not exists");
+            throw new ApiError(
+                httpStatus.NOT_FOUND,
+                "User with provided email does not exist."
+            );
         }
-
         return user;
     }
 }

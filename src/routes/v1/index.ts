@@ -1,6 +1,9 @@
 import { Router } from "express";
 import adminRoutes from "./admin.routes";
-import { authorizeRoles } from "../../middlewares/auth.middleware";
+import {
+    authentication,
+    authorizeRoles,
+} from "../../middlewares/auth.middleware";
 import brandRoutes from "./brand.routes";
 import teamRoutes from "./team.routes";
 import userRoutes from "./user.routes";
@@ -15,34 +18,39 @@ import authRoutes from "./auth.routes";
 const router = Router();
 
 // admin routes
-router.use("/admin", authorizeRoles(["ADMIN"]), adminRoutes);
+router.use("/admin", authentication, authorizeRoles(["ADMIN"]), adminRoutes);
 
 // Brand routes
-router.use("/brand", brandRoutes);
+router.use("/brand", authentication, brandRoutes);
 
 // Team routes
-router.use("/team", authorizeRoles(["TO"]), teamRoutes);
+router.use("/team", authentication, authorizeRoles(["TO"]), teamRoutes);
 
 // User routes
-router.use("/user", userRoutes);
+router.use("/user", authentication, userRoutes);
 
 // Task routes
-router.use("/tasks", tasksRoutes);
+router.use("/tasks", authentication, tasksRoutes);
 
 // Analytics routes
-router.use("/analytics", authorizeRoles(["ADMIN", "MG"]), analyticsRoutes);
+router.use(
+    "/analytics",
+    authentication,
+    authorizeRoles(["ADMIN", "MG"]),
+    analyticsRoutes
+);
 
 // Notification routes
-router.use("/notification", notificationRoutes);
+router.use("/notification", authentication, notificationRoutes);
 
 // Inventory routes
-router.use("/inventory", inventoryRoutes);
+router.use("/inventory", authentication, inventoryRoutes);
 
 // Event routes
-router.use("/event", eventsRoutes);
+router.use("/event", authentication, eventsRoutes);
 
 // filter routes
-router.use("/filter", filterRoutes);
+router.use("/filter", authentication, filterRoutes);
 
 // Auth routes
 router.use("/auth", authRoutes);

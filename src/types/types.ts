@@ -21,7 +21,6 @@ export interface TaskTypes {
 
 export interface usersTypes {
     user_name?: string;
-    password?: string;
     phone_number?: string;
     email?: string;
     roles?: ("ADMIN" | "MG" | "PO" | "BO" | "TO")[];

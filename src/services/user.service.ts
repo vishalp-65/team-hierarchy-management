@@ -55,7 +55,7 @@ class UserService {
             .getMany();
 
         // Cache the result
-        await setCache(cacheKey, users, 3600); // Cache for 1 hour
+        await setCache(cacheKey, users);
 
         return users;
     }

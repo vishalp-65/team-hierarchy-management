@@ -8,12 +8,8 @@ import { Role } from "../entities/Role";
 import { Brand } from "../entities/Brand";
 import { ContactPerson } from "../entities/ContactPerson";
 import { brandTypes, usersTypes } from "../types/types";
-import {
-    clearCache,
-    generateCacheKey,
-    invalidateAllPrefixCache,
-} from "../utils/cacheHandler";
-import { generateToken } from "../utils/authUtils";
+import { invalidateAllPrefixCache } from "../utils/cacheHandler";
+import { generateToken, hashPassword } from "../utils/authUtils";
 
 class AdminService {
     private userRepo: Repository<User>;
@@ -63,10 +59,13 @@ class AdminService {
             }
         }
 
+        // Hash password and create the user
+        const hashedPassword = await hashPassword(userData.password);
+
         // Create the user
         const user = this.userRepo.create({
             user_name: userData.user_name,
-            password: userData.password, // TODO: Hash the password before saving
+            password: hashedPassword,
             phone_number: userData.phone_number,
             email: userData.email,
             roles: roles,
@@ -103,7 +102,7 @@ class AdminService {
         await invalidateAllPrefixCache("userSearch", userId);
 
         // Generate JWT token for the user
-        const token = generateToken(user);
+        const token = generateToken(user.id);
 
         return { user, token };
     }

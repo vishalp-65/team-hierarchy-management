@@ -10,6 +10,7 @@ import notificationRoutes from "./notification.routes";
 import eventsRoutes from "./event.routes";
 import inventoryRoutes from "./inventory.routes";
 import filterRoutes from "./filter.routes";
+import authRoutes from "./auth.routes";
 
 const router = Router();
 
@@ -42,5 +43,8 @@ router.use("/event", eventsRoutes);
 
 // filter routes
 router.use("/filter", filterRoutes);
+
+// Auth routes
+router.use("/auth", authRoutes);
 
 export default router;

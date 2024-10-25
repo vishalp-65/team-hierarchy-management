@@ -7,6 +7,8 @@ import {
     JoinTable,
     ManyToOne,
     OneToMany,
+    CreateDateColumn,
+    UpdateDateColumn,
 } from "typeorm";
 import { Team } from "./Team";
 import { Role } from "./Role";
@@ -39,6 +41,12 @@ export class User {
         inverseJoinColumn: { name: "role_id", referencedColumnName: "id" },
     })
     roles: Role[];
+
+    @CreateDateColumn()
+    created_at: Date;
+
+    @UpdateDateColumn()
+    updated_at: Date;
 
     @ManyToOne(() => Team, (team) => team.members)
     team: Team;

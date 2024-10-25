@@ -20,8 +20,8 @@ export const verifyPassword = async (
 };
 
 // Function to generate JWT token
-export const generateToken = (user: User): string => {
-    return jwt.sign({ id: user.id }, config.JWT_SECRET, { expiresIn: "7d" }); // Token expires in 7 day
+export const generateToken = (userId: string): string => {
+    return jwt.sign({ id: userId }, config.JWT_SECRET, { expiresIn: "7d" }); // Token expires in 7 day
 };
 
 // Function to verify JWT token

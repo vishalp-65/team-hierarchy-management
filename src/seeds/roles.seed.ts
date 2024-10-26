@@ -42,6 +42,7 @@ export const seedAdminUser = async () => {
         if (existingAdmin) {
             // Generate JWT token for the user
             const token = generateToken(existingAdmin.id);
+            console.log("ID of user", existingAdmin.id);
             console.log("ADMIN user already exists token", token);
             return token;
         }

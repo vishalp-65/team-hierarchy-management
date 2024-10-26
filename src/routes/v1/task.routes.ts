@@ -30,12 +30,7 @@ router.patch("/:taskId/status", checkTaskPermissions, updateTaskStatus);
 router.delete("/:taskId", checkTaskPermissions, deleteTask);
 
 // Add comment to a task
-// router.post(
-//     "/:taskId/comments",
-//     ,
-//     checkTaskPermissions,
-//     addComment
-// );
+router.post("/:taskId/comments", checkTaskPermissions, addComment);
 
 // Route to get Task History
 router.get("/:taskId/history", checkTaskPermissions, getTaskHistory);

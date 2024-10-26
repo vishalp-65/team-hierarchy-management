@@ -2,6 +2,7 @@
 import { Server, Socket } from "socket.io";
 import { TaskServiceInstance } from "../services/task.service";
 import { User } from "../entities/User";
+import { NotificationServiceInstance } from "../services/notification.service";
 
 // Add Comment Handler
 export const addCommentHandler = async (
@@ -37,4 +38,12 @@ export const getCommentsHandler = async (
     } catch (error) {
         socket.emit("error", { message: "Failed to retrieve comments", error });
     }
+};
+
+// Handler for streaming notifications to a specific user
+export const notificationHandler = async (socket: Socket) => {
+    const userId = socket.data.user.id;
+    const notifications =
+        await NotificationServiceInstance.getNotificationsForUser(userId);
+    socket.emit("userNotifications", notifications); // Send notifications to specific user
 };

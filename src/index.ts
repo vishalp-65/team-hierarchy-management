@@ -13,6 +13,7 @@ import http from "http";
 import { SLAServiceInstance } from "./services/sla.service";
 import { startServer } from "./config/database_config";
 import { initializeSocket } from "./config/socket_config";
+import { config } from "./config/server_config";
 
 dotenv.config(); // Load environment variables
 
@@ -38,8 +39,8 @@ app.use(swaggerRoutes);
 // Initialize socket with server
 initializeSocket(server);
 
-server.listen(8083, () => {
-    console.log("Serve is running as 8083");
+server.listen(config.SOCKET_PORT, () => {
+    console.log(`socket is running on ${config.SOCKET_PORT}`);
 });
 
 // 404 handler for unknown API requests

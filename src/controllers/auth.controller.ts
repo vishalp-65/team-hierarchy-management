@@ -8,6 +8,7 @@ import {
 import { AuthServiceInstance } from "../services/auth.service";
 import sendResponse from "../utils/responseHandler";
 import httpStatus from "http-status";
+import { IGetUserAuthInfoRequest } from "../middlewares/auth.middleware";
 
 export const login = catchAsync(async (req: Request, res: Response) => {
     const validatedData = handleValidationErrors(
@@ -19,6 +20,12 @@ export const login = catchAsync(async (req: Request, res: Response) => {
     const user = await AuthServiceInstance.login(email, password);
     sendResponse(res, httpStatus.OK, true, "Logged in", user);
 });
+
+export const getUser = catchAsync(
+    async (req: IGetUserAuthInfoRequest, res: Response) => {
+        sendResponse(res, httpStatus.OK, true, "User details", req.user);
+    }
+);
 
 export const changePassword = catchAsync(
     async (req: Request, res: Response) => {

@@ -1,43 +1,53 @@
-name: Task_Management_Backend
+name: CI/CD_Pipeline
 
 on:
   push:
     branches: [ "master" ]
 
 jobs:
-  build-and-test:
+  build-test-deploy:
     runs-on: self-hosted
-
-    strategy:
-      matrix:
-        node-version: [20.x]
-        # Define additional versions if necessary for compatibility testing
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
+    - name: Log in to GitHub Docker registry
+      uses: docker/login-action@v2
       with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'npm'
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Install dependencies
-      run: npm ci
-
-    - name: Set environment variables
+    - name: Create .env file
       run: |
         touch .env
-        echo "${{ secrets.PROD_ENV_FILE }}" > .env
+        echo "PORT=8082" >> .env
+        echo "DB_URI=${{ secrets.DB_URI }}" >> .env
+        echo "REDIS_URL=${{ secrets.REDIS_URL }}" >> .env
+        echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
+        echo "SALT_ROUND=${{ secrets.SALT_ROUND }}" >> .env
+        echo "SOCKET_PORT=8083" >> .env
 
-    - name: Build application
-      run: npm run build
+    - name: Build Docker image
+      run: |
+        docker build -t task_management_backend:latest .
 
-    - name: Run tests
-      run: npm test
-      continue-on-error: false  # Stops if tests fail and shows error
+    - name: Run tests in Docker container
+      run: |
+        docker run --rm --env-file .env task_management_backend:latest npm test
+      continue-on-error: false  # Stop if tests fail
+
+    - name: Push Docker image to registry
+      if: success()  # Only push if tests pass
+      run: |
+        docker tag task_management_backend:latest ghcr.io/${{ github.repository }}/task_management_backend:latest
+        docker push ghcr.io/${{ github.repository }}/task_management_backend:latest
 
     - name: Deploy application
-      if: success()  # Only runs if previous steps succeed
-      run: pm2 restart task_server
+      if: success()  # Only deploy if tests pass
+      run: |
+        docker run -d -p 8082:8082 -p 8083:8083 \
+          --env-file .env \
+          --name task_management_backend_container \
+          ghcr.io/${{ github.repository }}/task_management_backend:latest

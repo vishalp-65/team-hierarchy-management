@@ -7,7 +7,7 @@
     "build": "tsc -p .",
     "dev": "tsc-watch --onSuccess \"npm start\"",
     "typeorm": "typeorm-ts-node-commonjs",
-    "test": "jest --coverage",
+    "test": "jest --coverage --forceExit",
     "test:watch": "jest --watch"
   },
   "keywords": [],

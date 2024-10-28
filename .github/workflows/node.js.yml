@@ -38,6 +38,6 @@ jobs:
       run: npm test
       continue-on-error: false  # Stops if tests fail and shows error
 
-    # - name: Deploy application
-    #   if: success()  # Only runs if previous steps succeed
-    #   run: pm2 restart chatbot
+    - name: Deploy application
+      if: success()  # Only runs if previous steps succeed
+      run: pm2 restart task_server

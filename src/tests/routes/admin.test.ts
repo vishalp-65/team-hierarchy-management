@@ -115,7 +115,7 @@ describe("Admin Routes", () => {
 
         expect(res.status).toBe(httpStatus.UNAUTHORIZED);
         expect(res.body.success).toBe(false);
-        expect(res.body.message).toBe("Unauthorized");
+        expect(res.body.message).toBe("Authorization header missing");
     });
 
     it("should return error when creating a brand with invalid owner ID", async () => {

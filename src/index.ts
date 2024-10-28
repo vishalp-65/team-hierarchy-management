@@ -39,9 +39,11 @@ app.use(swaggerRoutes);
 // Initialize socket with server
 initializeSocket(server);
 
-server.listen(config.SOCKET_PORT, () => {
-    console.log(`socket is running on ${config.SOCKET_PORT}`);
-});
+if (config.NODE_ENV !== "test") {
+    server.listen(config.SOCKET_PORT, () => {
+        console.log(`socket is running on ${config.SOCKET_PORT}`);
+    });
+}
 
 // 404 handler for unknown API requests
 app.use((req, res, next) => {

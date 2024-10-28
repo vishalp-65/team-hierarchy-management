@@ -6,23 +6,22 @@ on:
 
 jobs:
   build-test-deploy:
-    runs-on: self-hosted
+    runs-on: self-hosted  # Ensure Docker is installed on your self-hosted runner
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
     - name: Log in to GitHub Docker registry
-      uses: docker/login-action@v2
+      uses: docker/login-action@v3
       with:
         registry: ghcr.io
-        username: ${{ github.actor }}
+        username: ${{ github.repository_owner }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Create .env file
       run: |
-        touch .env
-        echo "PORT=8082" >> .env
+        echo "PORT=8082" > .env
         echo "DB_URI=${{ secrets.DB_URI }}" >> .env
         echo "REDIS_URL=${{ secrets.REDIS_URL }}" >> .env
         echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
@@ -43,6 +42,12 @@ jobs:
       run: |
         docker tag task_management_backend:latest ghcr.io/${{ github.repository }}/task_management_backend:latest
         docker push ghcr.io/${{ github.repository }}/task_management_backend:latest
+
+    - name: Clean up old container
+      if: always()  # Always attempt to clean up, regardless of success/failure
+      run: |
+        docker stop task_management_backend_container || true
+        docker rm task_management_backend_container || true
 
     - name: Deploy application
       if: success()  # Only deploy if tests pass

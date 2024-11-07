@@ -1,4 +1,3 @@
-// src/services/analytics.service.ts
 import { Task } from "../entities/Task";
 import { ApiError } from "../utils/ApiError";
 import httpStatus from "http-status";
@@ -73,6 +72,7 @@ class AnalyticsService {
                 throw new ApiError(httpStatus.BAD_REQUEST, "Invalid timeFrame");
         }
 
+        // Count total tasks based on timeframe
         const totalTasksCreated = await taskRepo.count({
             where: {
                 created_at:
@@ -112,10 +112,56 @@ class AnalyticsService {
             },
         });
 
+        const eventTasksCount = await taskRepo.count({
+            where: {
+                task_type: "event",
+                created_at:
+                    timeFrame !== "alltime"
+                        ? Between(startDate, now)
+                        : undefined,
+            },
+        });
+        const inventoryTasksCount = await taskRepo.count({
+            where: {
+                task_type: "inventory",
+                created_at:
+                    timeFrame !== "alltime"
+                        ? Between(startDate, now)
+                        : undefined,
+            },
+        });
+        const brandTasksCount = await taskRepo.count({
+            where: {
+                task_type: "brand",
+                created_at:
+                    timeFrame !== "alltime"
+                        ? Between(startDate, now)
+                        : undefined,
+            },
+        });
+        const generalTasksCount = await taskRepo.count({
+            where: {
+                task_type: "general",
+                created_at:
+                    timeFrame !== "alltime"
+                        ? Between(startDate, now)
+                        : undefined,
+            },
+        });
+
         // Cache the result
         await setCache(
             cacheKey,
-            { totalTasksCreated, openTasks, completedTasks, overdueTasks },
+            {
+                totalTasksCreated,
+                openTasks,
+                completedTasks,
+                overdueTasks,
+                inventoryTasksCount,
+                eventTasksCount,
+                brandTasksCount,
+                generalTasksCount,
+            },
             3600
         ); // Cache for 1 hour
 
@@ -124,6 +170,10 @@ class AnalyticsService {
             openTasks,
             completedTasks,
             overdueTasks,
+            inventoryTasksCount,
+            eventTasksCount,
+            brandTasksCount,
+            generalTasksCount,
         };
     }
 }

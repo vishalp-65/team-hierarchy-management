@@ -123,14 +123,14 @@ class TaskService {
         // Generate a unique cache key based on user ID and filters
         const cacheKey = generateCacheKey("tasks", user.id, { page, limit });
 
-        // Check if tasks are in cache
-        const cachedTasks = await getFromCache<{
-            tasks: Task[];
-            total: number;
-        }>(cacheKey);
-        if (cachedTasks) {
-            return cachedTasks; // Return cached result if exists
-        }
+        // // Check if tasks are in cache
+        // const cachedTasks = await getFromCache<{
+        //     tasks: Task[];
+        //     total: number;
+        // }>(cacheKey);
+        // if (cachedTasks) {
+        //     return cachedTasks; // Return cached result if exists
+        // }
 
         const query = this.taskRepo
             .createQueryBuilder("task")
@@ -218,6 +218,11 @@ class TaskService {
                 assignedTo: filters.assignedTo,
             });
         }
+        if (filters.status) {
+            query.andWhere("task.status = :status", {
+                status: filters.status,
+            });
+        }
         if (filters.teamOwner) {
             const teamMemberIds = await this.getTeamOwnerIds(user);
             if (teamMemberIds.length > 0) {
@@ -228,6 +233,11 @@ class TaskService {
         }
         if (filters.dueDatePassed) {
             query.andWhere("task.due_date < :now", { now: new Date() });
+        }
+        if (filters.taskName) {
+            query.andWhere("task.title LIKE :taskName", {
+                title: `%${filters.taskName}%`,
+            });
         }
         if (filters.brandName) {
             query.andWhere("brand.brand_name LIKE :brandName", {

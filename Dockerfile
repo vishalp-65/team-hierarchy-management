@@ -1,6 +1,9 @@
 # Use official Node.js image
 FROM node:20
 
+# Install SQLite
+RUN apt-get update && apt-get install -y sqlite3
+
 # Set the working directory
 WORKDIR /app
 

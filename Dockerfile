@@ -1,5 +1,5 @@
 # Use official Node.js image
-FROM node:20
+FROM node:20-slim
 
 # Install SQLite
 RUN apt-get update && apt-get install -y sqlite3

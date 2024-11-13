@@ -20,14 +20,14 @@ class UserService {
             throw new ApiError(httpStatus.NOT_FOUND, "User not found");
         }
 
-        if (!user.team) {
-            throw new ApiError(
-                httpStatus.NOT_FOUND,
-                "No team found for this user"
-            );
-        }
+        // if (!user.team) {
+        //     throw new ApiError(
+        //         httpStatus.NOT_FOUND,
+        //         "No team found for this user"
+        //     );
+        // }
 
-        return user.team.members;
+        return user.team?.members;
     }
 
     async searchUser(searchTerm: string, userId: string) {

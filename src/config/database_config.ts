@@ -1,6 +1,6 @@
 import app from "..";
 import AppDataSource from "../data-source";
-import { seedAdminUser, seedRoles } from "../seeds/roles.seed";
+import { seedAdminUser } from "../seeds/roles.seed";
 import { config } from "./server_config";
 
 // Initialize the database and start the server
@@ -10,8 +10,6 @@ export function startServer(): Promise<void> {
             if (config.NODE_ENV !== "test") {
                 await AppDataSource.initialize();
                 console.log("Data Source has been initialized!");
-
-                await seedRoles(); // Seed the roles first
 
                 await seedAdminUser(); // Seed the admin user
 

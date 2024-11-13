@@ -138,9 +138,9 @@ class TaskService {
             .leftJoinAndSelect("task.assignee", "assignee")
             .leftJoinAndSelect("task.brand", "brand")
             .leftJoinAndSelect("task.event", "event")
-            .leftJoinAndSelect("task.inventory", "inventory")
-            .leftJoinAndSelect("task.history", "history")
-            .leftJoinAndSelect("history.performed_by", "historyUser");
+            .leftJoinAndSelect("task.inventory", "inventory");
+        // .leftJoinAndSelect("task.history", "history")
+        // .leftJoinAndSelect("history.performed_by", "historyUser");
 
         // Apply Role-based Access Control (RBAC)
         this.applyRBAC(query, user);
@@ -223,6 +223,16 @@ class TaskService {
                 status: filters.status,
             });
         }
+        if (filters.taskBased) {
+            const value = filters.taskBased;
+            if (value === "all") {
+                return;
+            } else {
+                query.andWhere("task.task_type = :task_type", {
+                    task_type: value,
+                });
+            }
+        }
         if (filters.teamOwner) {
             const teamMemberIds = await this.getTeamOwnerIds(user);
             if (teamMemberIds.length > 0) {
@@ -249,6 +259,7 @@ class TaskService {
                 inventoryName: `%${filters.inventoryName}%`,
             });
         }
+
         if (filters.eventName) {
             query.andWhere("event.name LIKE :eventName", {
                 eventName: `%${filters.eventName}%`,

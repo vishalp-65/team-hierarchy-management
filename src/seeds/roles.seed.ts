@@ -12,23 +12,29 @@ export const seedRoles = async () => {
     const roleRepo = AppDataSource.getRepository(Role);
 
     // Check if roles already exist
-    const existingRoles = await roleRepo.find();
-    if (existingRoles.length === 0) {
-        // Insert default roles into the database
-        const rolesToInsert = defaultRoles.map((roleName: string) => {
-            return roleRepo.create({ role_name: roleName });
-        });
+    try {
+        const existingRoles = await roleRepo.find();
 
-        await roleRepo.save(rolesToInsert);
-        console.log("Default roles seeded successfully");
-    } else {
-        console.log("Roles already exist in the database");
+        if (existingRoles.length === 0) {
+            // Insert default roles into the database
+            const rolesToInsert = defaultRoles.map((roleName: string) => {
+                return roleRepo.create({ role_name: roleName });
+            });
+
+            await roleRepo.save(rolesToInsert);
+            console.log("Default roles seeded successfully");
+        } else {
+            console.log("Roles already exist in the database");
+        }
+    } catch (error) {
+        console.log("something went wrong when adding roles ", error);
     }
 };
 
 // Seed file for admin user creation
 export const seedAdminUser = async () => {
     try {
+        await seedRoles();
         const userRepo = AppDataSource.getRepository(User);
         const roleRepo = AppDataSource.getRepository(Role);
 

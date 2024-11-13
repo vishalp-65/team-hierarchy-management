@@ -1,6 +1,7 @@
+// data-source.ts
+
 import "reflect-metadata";
 import { DataSource } from "typeorm";
-import "reflect-metadata";
 import { config } from "./config/server_config";
 
 const AppDataSource = new DataSource({

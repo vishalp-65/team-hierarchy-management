@@ -72,10 +72,13 @@ export const getTasksSchema = z.object({
     brandName: z.string().optional(),
     inventoryName: z.string().optional(),
     eventName: z.string().optional(),
-    sortBy: z.enum(["title", "due_date", "status", "created_at"]).optional(),
+    sortBy: z
+        .enum(["title", "due_date", "status", "created_at"])
+        .optional()
+        .default("created_at"),
     status: z.enum(["open", "in-progress", "completed", "overdue"]).optional(),
     taskName: z.string().optional(),
-    order: z.enum(["asc", "desc"]).optional().default("asc"),
+    order: z.enum(["asc", "desc"]).optional().default("desc"),
     page: z
         .string()
         .or(z.number())

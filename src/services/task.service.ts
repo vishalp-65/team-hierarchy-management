@@ -146,7 +146,7 @@ class TaskService {
         this.applyRBAC(query, user);
 
         // Apply filters
-        this.applyFilters(query, filters, user);
+        await this.applyFilters(query, filters, user);
 
         // Apply sorting
         this.applySorting(query, filters);
@@ -246,7 +246,7 @@ class TaskService {
         }
         if (filters.taskName) {
             query.andWhere("task.title LIKE :taskName", {
-                title: `%${filters.taskName}%`,
+                taskName: `%${filters.taskName}%`,
             });
         }
         if (filters.brandName) {

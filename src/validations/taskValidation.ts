@@ -11,6 +11,18 @@ const futureDate = z
     })
     .transform((val) => new Date(val));
 
+// Reusable transformation function for converting string to array
+const stringToArray = (val: any) => {
+    if (Array.isArray(val)) {
+        return val; // If it's already an array, return as is
+    }
+    if (typeof val === "string" && val !== "") {
+        // If the value is a string, split it by commas
+        return val.split(",").map((item) => item.trim()); // .trim() to clean any extra spaces
+    }
+    return []; // If it's neither, return an empty array
+};
+
 // Enum for task types
 const taskTypeEnum = z.enum(["general", "brand", "event", "inventory"]);
 
@@ -59,9 +71,10 @@ export const editTaskSchema = z
 // Get tasks schema
 export const getTasksSchema = z.object({
     taskType: z.enum(["all", "your", "team", "delegated"]).optional(),
-    assignedBy: z.string().optional(),
-    assignedTo: z.string().optional(),
-    teamOwner: z.string().optional(),
+    // Use the reusable stringToArray function for these fields
+    assignedBy: z.string().optional().transform(stringToArray),
+    assignedTo: z.string().optional().transform(stringToArray),
+    teamOwner: z.string().optional().transform(stringToArray),
     taskBased: z
         .enum(["all", "general", "brand", "event", "inventory"])
         .optional(),
@@ -76,7 +89,10 @@ export const getTasksSchema = z.object({
         .enum(["title", "due_date", "status", "created_at"])
         .optional()
         .default("created_at"),
-    status: z.enum(["open", "in-progress", "completed", "overdue"]).optional(),
+    status: z
+        .enum(["open", "in-progress", "completed", "overdue"])
+        .optional()
+        .transform((val) => val?.toLowerCase()),
     taskName: z.string().optional(),
     order: z.enum(["asc", "desc"]).optional().default("desc"),
     page: z

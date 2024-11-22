@@ -28,6 +28,7 @@ export const getTasks = catchAsync(
         const filters = handleValidationErrors(
             TaskValidationInstance.getTasks(req.query)
         );
+        console.log("filters", filters.data);
         const tasks = await TaskServiceInstance.getTasks(
             req.user,
             filters.data

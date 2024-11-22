@@ -208,52 +208,76 @@ class TaskService {
         if (filters.taskType) {
             this.applyTaskTypeFilter(query, filters.taskType, user);
         }
-        if (filters.assignedBy) {
-            query.andWhere("creator.id = :assignedBy", {
-                assignedBy: filters.assignedBy,
+
+        if (
+            filters.assignedBy &&
+            Array.isArray(filters.assignedBy) &&
+            filters.assignedBy.length > 0
+        ) {
+            query.andWhere("creator.id IN (:...assignedBy)", {
+                assignedBy:
+                    filters.assignedBy.length > 0 ? filters.assignedBy : [null],
             });
         }
-        if (filters.assignedTo) {
-            query.andWhere("assignee.id = :assignedTo", {
-                assignedTo: filters.assignedTo,
+
+        if (
+            filters.assignedTo &&
+            Array.isArray(filters.assignedTo) &&
+            filters.assignedTo.length > 0
+        ) {
+            query.andWhere("assignee.id IN (:...assignedTo)", {
+                assignedTo:
+                    filters.assignedTo.length > 0 ? filters.assignedTo : [null],
             });
         }
+
         if (filters.status) {
             query.andWhere("task.status = :status", {
                 status: filters.status,
             });
         }
+
         if (filters.taskBased) {
             const value = filters.taskBased;
-            if (value === "all") {
-                return;
-            } else {
+            if (value !== "all") {
                 query.andWhere("task.task_type = :task_type", {
                     task_type: value,
                 });
             }
         }
-        if (filters.teamOwner) {
+
+        if (
+            filters.teamOwner &&
+            Array.isArray(filters.teamOwner) &&
+            filters.teamOwner.length > 0
+        ) {
             const teamMemberIds = await this.getTeamOwnerIds(user);
-            if (teamMemberIds.length > 0) {
+            const validTeamMemberIds = teamMemberIds.filter((id) =>
+                filters.teamOwner.includes(id)
+            );
+            if (validTeamMemberIds.length > 0) {
                 query.andWhere("task.assigneeId IN (:...teamMemberIds)", {
-                    teamMemberIds,
+                    teamMemberIds: validTeamMemberIds,
                 });
             }
         }
+
         if (filters.dueDatePassed) {
             query.andWhere("task.due_date < :now", { now: new Date() });
         }
+
         if (filters.taskName) {
             query.andWhere("task.title LIKE :taskName", {
                 taskName: `%${filters.taskName}%`,
             });
         }
+
         if (filters.brandName) {
             query.andWhere("brand.brand_name LIKE :brandName", {
                 brandName: `%${filters.brandName}%`,
             });
         }
+
         if (filters.inventoryName) {
             query.andWhere("inventory.name LIKE :inventoryName", {
                 inventoryName: `%${filters.inventoryName}%`,
